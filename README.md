@@ -48,6 +48,11 @@ Le jeu est publié automatiquement sur GitHub Pages à chaque push, une fois Pag
 (Settings → Pages → Source : **GitHub Actions**). Ouvrir l'adresse dans **Chrome** sur la tablette,
 puis menu ⋮ → **Ajouter à l'écran d'accueil** pour l'avoir en plein écran comme une application.
 
+**Mises à jour** : l'application se met à jour toute seule. À chaque ouverture, et chaque fois qu'elle
+revient au premier plan sur l'écran d'accueil, elle vérifie s'il existe une nouvelle version et se
+recharge (jamais pendant une partie). En secours : espace parent (⚙) → **9 : mettre à jour
+l'application**. La progression n'est pas effacée.
+
 La voix utilise le moteur de synthèse vocale d'Android : vérifier qu'une voix **française** est installée
 (Paramètres → Gestion globale → Synthèse vocale → Moteur Google → Installer les données vocales → Français).
 

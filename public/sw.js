@@ -1,5 +1,5 @@
 // Mise en cache simple pour jouer hors ligne une fois l'application ouverte une première fois.
-const CACHE = 'lettres-v2';
+const CACHE = 'lettres-v3';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {
   e.waitUntil(

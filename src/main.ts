@@ -9,6 +9,7 @@ import { showNameScreen } from './screens/name';
 import { showHome } from './screens/home';
 import { showMap } from './screens/map';
 import { showShop } from './screens/shop';
+import { watchForUpdates } from './update';
 
 export type ScreenName = 'name' | 'home' | 'map' | 'shop';
 
@@ -45,6 +46,9 @@ const app: App = {
 };
 
 app.go(app.progress.witchName ? 'home' : 'name');
+
+// Nouvelle version publiée ? Rechargement automatique depuis l'accueil.
+watchForUpdates(() => !!app.root.querySelector('.home, .name-screen'));
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});

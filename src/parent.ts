@@ -2,6 +2,7 @@
 import type { App } from './main';
 import { speak } from './speech';
 import { FUSION_ORDER } from './content';
+import { BUILD, forceUpdate } from './update';
 
 export function parentGate(): boolean {
   const a = 3 + Math.floor(Math.random() * 6);
@@ -15,7 +16,7 @@ export function parentMenu(app: App): void {
   const p = app.progress;
   const choice = window.prompt(
     [
-      'Espace parent',
+      `Espace parent — version du ${BUILD}`,
       `Étoiles : ${p.stars} disponibles (${p.starsEarned} gagnées au total)`,
       '',
       '1 : changer le nom de la sorcière',
@@ -26,6 +27,7 @@ export function parentMenu(app: App): void {
       '6 : retirer un cadeau',
       '7 : donner ou retirer des étoiles',
       `8 : passer la lettre suivante au chaudron (${p.fused.length} / ${FUSION_ORDER.length})`,
+      '9 : mettre à jour l’application (dernière version)',
     ].join('\n'),
   );
   const giftList = () => p.gifts.map((g, i) => `${i + 1} : ${g.emoji} ${g.name} (${g.price} ★)`).join('\n');
@@ -75,6 +77,9 @@ export function parentMenu(app: App): void {
       if (g && window.confirm(`Retirer ${g.name} ?`)) p.gifts = p.gifts.filter((x) => x !== g);
       break;
     }
+    case '9':
+      forceUpdate();
+      return;
     case '8':
       {
         const next = FUSION_ORDER.find((l) => !p.fused.includes(l.id));
