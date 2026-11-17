@@ -42,7 +42,7 @@ body { font-family: var(--title-font); font-weight: 500; user-select: none; -web
 /* Sorcière */
 .witch svg { width: 100%; height: auto; display: block; overflow: visible; }
 .witch { width: clamp(150px, 22vw, 240px); }
-.witch.big { width: clamp(180px, 34vh, 300px); }
+.witch.big { width: clamp(160px, 30vh, 280px); }
 .bob { animation: bob 3s ease-in-out infinite; }
 .witch.cast { animation: cast .7s ease-out; }
 .witch .mouth { display: none; }
@@ -174,4 +174,114 @@ button { font-family: var(--title-font); color: var(--ink); cursor: pointer; bor
   .game-layout { flex-direction: column; gap: 18px; }
   .witch-zone { max-width: 92%; flex-direction: row; }
   .witch { width: clamp(150px, 22vh, 250px); }
+}
+
+/* ---------- Décors ---------- */
+.bg { transition: opacity .6s ease; }
+.bg.bg-out { opacity: 0; }
+
+/* ---------- Accueil ---------- */
+.home-head { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.world-chip { font-size: 16px; color: var(--violet-d); background: var(--card); backdrop-filter: blur(8px); padding: 6px 14px; border-radius: 999px; box-shadow: var(--shadow); }
+.home-actions { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.btn-shop {
+  position: relative; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: clamp(20px, 3vw, 28px);
+  padding: 16px 28px; border-radius: 999px; color: var(--violet-d); box-shadow: 0 8px 0 #d9c9f2, var(--shadow);
+}
+.btn-shop:active { transform: translateY(5px); box-shadow: 0 3px 0 #d9c9f2; }
+.shop-ico { font-size: 1.3em; line-height: 1; }
+.badge { position: absolute; top: -8px; right: -6px; background: var(--pink); color: #fff; font-size: 16px; min-width: 28px; height: 28px; border-radius: 14px; display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+
+/* ---------- Carte de l'aventure ---------- */
+.world-title { display: flex; flex-direction: column; align-items: center; font-weight: 700; font-size: clamp(20px, 3vw, 30px); color: #fff; text-shadow: 0 2px 0 var(--violet-d), 0 4px 16px rgba(0,0,0,.3); text-align: center; }
+.world-title small { font-size: 14px; font-weight: 500; opacity: .9; }
+.map-area { position: relative; flex: 1; width: 100%; max-width: 1100px; min-height: 0; }
+.map-path { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.node {
+  position: absolute; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%;
+  background: #fff; color: var(--violet); font-weight: 700; font-size: 26px; display: grid; place-items: center;
+  box-shadow: 0 6px 0 #d9c9f2, var(--shadow); opacity: .75;
+}
+.node.done { background: linear-gradient(160deg, #ffe08a, var(--gold)); color: #fff; box-shadow: 0 6px 0 #d99a12, var(--shadow); opacity: 1; font-size: 30px; }
+.node.current { opacity: 1; background: var(--pink); color: #fff; box-shadow: 0 6px 0 #c33f85, 0 0 0 10px rgba(236,95,168,.25), var(--shadow); animation: breathe 1.6s ease-in-out infinite; }
+.node.boss { width: 120px; height: 120px; background: rgba(255,255,255,.7); opacity: 1; }
+.node.boss.current { background: rgba(236,95,168,.35); }
+.node.boss .dragon { width: 110px; }
+.walker { position: absolute; width: clamp(80px, 11vw, 120px); transform: translate(-50%, -96%); transition: left 1.3s ease-in-out, top 1.3s ease-in-out; pointer-events: none; z-index: 2; }
+.walker.walking { animation: hop .32s ease-in-out infinite; }
+.map > .btn-play { margin-bottom: 4px; }
+
+/* ---------- Dragon ---------- */
+.dragon svg { width: 100%; height: auto; display: block; overflow: visible; }
+.dragon .dragon-happy, .dragon .dragon-blush, .dragon .dragon-hearts { display: none; }
+.dragon.friendly .dragon-happy, .dragon.friendly .dragon-blush, .dragon.friendly .dragon-hearts { display: inline; }
+.dragon.friendly .dragon-brow, .dragon.friendly .dragon-pupil, .dragon.friendly .dragon-teeth { display: none; }
+.dragon .dragon-wing { transform-box: fill-box; transform-origin: 10% 100%; animation: flap 1.4s ease-in-out infinite; }
+.dragon.friendly .dragon-hearts { animation: float 1.6s ease-in-out infinite; }
+.dragon.angry { animation: bob 2.4s ease-in-out infinite; }
+.dragon.hit { animation: hit .5s ease-out; }
+.dragon.laugh { animation: laugh .6s ease-in-out; }
+.dragon-zone { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.dragon-zone .dragon { width: clamp(170px, 26vh, 260px); }
+.hp { display: flex; gap: 4px; background: var(--card); padding: 6px 12px; border-radius: 999px; box-shadow: var(--shadow); }
+.heart { color: #ff4f7b; font-size: 22px; line-height: 1; transition: transform .3s, opacity .3s; }
+.heart.lost { color: #d6d0de; transform: scale(.8); }
+.spell { position: fixed; z-index: 20; font-size: 44px; color: var(--gold); text-shadow: 0 0 12px #fff3a0, 0 0 24px #c27bff; transition: transform .55s cubic-bezier(.4, 0, .6, 1); pointer-events: none; }
+.board { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.dots.hidden { visibility: hidden; }
+.game .stage:has(.dragon-zone) { gap: 14px; }
+.game .stage:has(.dragon-zone) .tile { width: clamp(100px, 15vh, 150px); height: clamp(110px, 17vh, 170px); font-size: clamp(56px, 10vh, 100px); }
+
+.finale-card { margin: auto; gap: 18px; }
+.finale-pair { display: flex; align-items: flex-end; gap: 30px; }
+.finale-pair .witch { width: 170px; }
+.finale-pair .dragon { width: 230px; }
+.finale-text { font-family: var(--read-font); font-size: 24px; margin: 0; }
+
+/* ---------- Boutique ---------- */
+.title.small { font-size: clamp(26px, 4vw, 40px); }
+.shop-body { flex: 1; width: 100%; max-width: 1100px; overflow-y: auto; display: flex; flex-direction: column; gap: 22px; padding: 6px 4px 20px; }
+.gift-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
+.gift {
+  background: var(--card); backdrop-filter: blur(10px); border-radius: 26px; padding: 18px 14px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; transition: transform .15s;
+}
+.gift-emoji { font-size: 64px; line-height: 1.1; }
+.gift-emoji.big { font-size: 110px; }
+.gift-name { font-family: var(--read-font); font-weight: 700; font-size: 21px; color: var(--ink); min-height: 2.4em; display: grid; place-items: center; }
+.gift-price { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 26px; color: #c48a00; }
+.gift.can { box-shadow: 0 0 0 4px var(--gold), var(--shadow); }
+.gift.can .gift-emoji { animation: twinkle 2.2s ease-in-out infinite; }
+.gift-ok { font-size: 15px; color: #fff; background: var(--green); padding: 6px 12px; border-radius: 999px; }
+.gift.locked .gift-emoji { filter: grayscale(.6); opacity: .7; }
+.gift-bar { position: relative; width: 100%; height: 26px; background: #ece6f5; border-radius: 13px; overflow: hidden; font-size: 14px; color: var(--ink-soft); display: grid; place-items: center; }
+.gift-fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #ffe08a, var(--gold)); border-radius: 13px; }
+.gift-bar span { position: relative; }
+.gift.shake { animation: shake .45s ease-in-out; }
+
+.coupons-title { font-weight: 700; font-size: 22px; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,.3); margin-bottom: 10px; }
+.coupon-list { display: flex; flex-wrap: wrap; gap: 14px; }
+.coupon {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px 12px 18px; border-radius: 18px;
+  background: #fff; border: 3px dashed var(--pink); box-shadow: var(--shadow);
+}
+.coupon-emoji { font-size: 36px; }
+.coupon-name { font-family: var(--read-font); font-weight: 700; font-size: 19px; }
+.coupon-given { font-size: 13px; color: var(--ink-soft); background: #f1edf6; padding: 8px 10px; border-radius: 12px; }
+
+.overlay { position: fixed; inset: 0; z-index: 30; background: rgba(42, 31, 61, .45); backdrop-filter: blur(4px); display: grid; place-items: center; animation: fade .2s ease-out; padding: 16px; }
+.confirm { gap: 12px; padding: 28px 44px; background: #fff; }
+.btn-no { color: #b0a6c0; font-size: 36px; }
+.confirm .btn-go { font-size: 40px; }
+
+@keyframes hop { 50% { transform: translate(-50%, -104%); } }
+@keyframes flap { 50% { transform: rotate(-10deg); } }
+@keyframes float { 50% { transform: translateY(-8px); } }
+@keyframes hit { 20% { transform: translateX(18px) rotate(6deg); filter: brightness(1.6); } 60% { transform: translateX(-6px); } }
+@keyframes laugh { 25% { transform: rotate(-4deg) translateY(-6px); } 75% { transform: rotate(4deg) translateY(-6px); } }
+
+@media (max-aspect-ratio: 1/1) {
+  .node.boss { width: 96px; height: 96px; }
+  .node.boss .dragon { width: 86px; }
+  .gift-grid { grid-template-columns: repeat(2, 1fr); }
 }

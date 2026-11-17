@@ -112,51 +112,55 @@ export function witchEl(extra = ''): HTMLElement {
   return fromSvg(WITCH_SVG, `witch ${extra}`.trim());
 }
 
-const FOREST_SVG = `
-<svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8fb3ef"/><stop offset=".55" stop-color="#c9d8f3"/><stop offset=".8" stop-color="#fbe3c4"/>
-    </linearGradient>
-    <radialGradient id="sun" cx=".72" cy=".52" r=".35"><stop offset="0" stop-color="#fff2c9"/><stop offset="1" stop-color="#fff2c9" stop-opacity="0"/></radialGradient>
-    <linearGradient id="meadow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ccb6b"/><stop offset="1" stop-color="#6fae4f"/></linearGradient>
-    <g id="pine">
-      <path d="M0 -150 L40 -70 L22 -72 L56 -10 L-56 -10 L-22 -72 L-40 -70 Z"/>
-      <rect x="-6" y="-12" width="12" height="18" fill="#6b4a2e"/>
-    </g>
-  </defs>
-  <rect width="1600" height="1000" fill="url(#sky)"/>
-  <rect width="1600" height="1000" fill="url(#sun)"/>
-  <g fill="#fff" opacity=".85">
-    <path d="M180 170 q20 -40 70 -30 q30 -40 80 -10 q50 -10 60 40 z"/>
-    <path d="M1000 120 q20 -36 64 -26 q30 -36 74 -8 q44 -6 52 36 z"/>
-    <path d="M1300 250 q14 -26 46 -18 q22 -26 54 -6 q32 -4 38 26 z" opacity=".7"/>
-  </g>
-  <path d="M0 560 Q200 470 420 520 T860 500 T1300 490 T1600 520 V1000 H0 Z" fill="#b6c7a8"/>
-  <path d="M0 610 Q260 540 520 590 T1040 570 T1600 590 V1000 H0 Z" fill="#7fa77a"/>
-  <g fill="#4f7e5a">
-    <use href="#pine" transform="translate(90 660) scale(1.3)"/>
-    <use href="#pine" transform="translate(190 650) scale(1.6)"/>
-    <use href="#pine" transform="translate(300 670) scale(1.1)"/>
-    <use href="#pine" transform="translate(1290 655) scale(1.5)"/>
-    <use href="#pine" transform="translate(1400 670) scale(1.2)"/>
-    <use href="#pine" transform="translate(1510 650) scale(1.7)"/>
-  </g>
-  <g fill="#3b6648">
-    <use href="#pine" transform="translate(30 700) scale(1.8)"/>
-    <use href="#pine" transform="translate(1570 705) scale(1.9)"/>
-    <use href="#pine" transform="translate(1180 690) scale(1.1)"/>
-  </g>
-  <path d="M0 690 Q400 640 800 670 T1600 660 V1000 H0 Z" fill="url(#meadow)"/>
-  <g opacity=".9">
-    <circle cx="160" cy="800" r="7" fill="#fff"/><circle cx="174" cy="808" r="5" fill="#ffd34a"/>
-    <circle cx="420" cy="880" r="7" fill="#f6a6d0"/><circle cx="660" cy="760" r="6" fill="#fff"/>
-    <circle cx="980" cy="840" r="7" fill="#c8a0f0"/><circle cx="1220" cy="770" r="6" fill="#ffd34a"/>
-    <circle cx="1400" cy="900" r="8" fill="#fff"/><circle cx="1470" cy="800" r="6" fill="#f6a6d0"/>
-    <circle cx="300" cy="940" r="8" fill="#c8a0f0"/><circle cx="820" cy="950" r="7" fill="#ffd34a"/>
-  </g>
-</svg>`;
+export interface DragonColors {
+  body: string;
+  dark: string;
+  belly: string;
+  wing: string;
+}
 
-export function forestEl(): HTMLElement {
-  return fromSvg(FOREST_SVG, 'bg');
+/** Un dragon dodu, plus grognon que méchant. Après la victoire il devient tout gentil (classe `friendly`). */
+export function dragonEl(c: DragonColors, extra = ''): HTMLElement {
+  return fromSvg(
+    `<svg viewBox="0 0 280 250" xmlns="http://www.w3.org/2000/svg" aria-label="Le dragon">
+  <ellipse cx="150" cy="238" rx="96" ry="10" fill="#1d1230" opacity=".18"/>
+  <!-- queue -->
+  <path d="M210 190 Q262 196 266 150 Q268 128 252 120 Q258 150 236 166 Q220 176 200 170 Z" fill="${c.body}"/>
+  <path d="M252 120 l18 -12 -6 22 z" fill="${c.dark}"/>
+  <!-- aile -->
+  <g class="dragon-wing">
+    <path d="M170 110 Q180 30 250 18 Q236 48 244 60 Q220 62 226 84 Q204 84 206 108 Z" fill="${c.wing}"/>
+    <path d="M178 104 Q196 56 244 26 M196 104 Q210 76 236 62 M206 106 Q214 92 226 84" stroke="${c.dark}" stroke-width="3" fill="none" opacity=".6"/>
+  </g>
+  <!-- corps -->
+  <ellipse cx="160" cy="170" rx="70" ry="62" fill="${c.body}"/>
+  <ellipse cx="146" cy="182" rx="42" ry="44" fill="${c.belly}"/>
+  <path d="M120 162 q26 8 52 0 M116 184 q30 8 60 0 M122 206 q24 8 48 0" stroke="${c.dark}" stroke-width="2.5" fill="none" opacity=".35"/>
+  <!-- pattes -->
+  <ellipse cx="118" cy="226" rx="24" ry="14" fill="${c.dark}"/><ellipse cx="190" cy="226" rx="24" ry="14" fill="${c.dark}"/>
+  <path d="M100 230 v-6 M110 232 v-6 M172 230 v-6 M182 232 v-6" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="112" cy="168" rx="14" ry="22" fill="${c.body}" transform="rotate(30 112 168)"/>
+  <!-- piquants du dos -->
+  <path d="M170 106 l10 -18 8 20 z M196 116 l14 -14 4 22 z M216 136 l16 -8 -2 22 z" fill="${c.dark}"/>
+  <!-- tête -->
+  <g class="dragon-head">
+    <path d="M60 92 Q58 50 100 42 Q146 36 160 76 Q170 110 140 126 Q110 140 76 128 Q42 120 40 104 Q40 92 60 92 Z" fill="${c.body}"/>
+    <path d="M40 104 Q50 118 80 122" stroke="${c.dark}" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <circle cx="52" cy="98" r="3.5" fill="${c.dark}"/>
+    <path d="M104 44 l-6 -30 20 24 z M134 52 l8 -30 8 34 z" fill="#f4e7c8"/>
+    <ellipse cx="112" cy="80" rx="14" ry="16" fill="#fff"/>
+    <circle class="dragon-pupil" cx="108" cy="82" r="8" fill="#1d1230"/>
+    <circle cx="105" cy="78" r="3" fill="#fff"/>
+    <path class="dragon-brow" d="M94 60 L128 70" stroke="${c.dark}" stroke-width="6" stroke-linecap="round"/>
+    <path class="dragon-happy" d="M98 82 q14 -14 28 0" stroke="#1d1230" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <ellipse class="dragon-blush" cx="128" cy="104" rx="10" ry="6" fill="#ff8fa3" opacity=".7"/>
+    <path class="dragon-teeth" d="M66 122 l5 8 5 -8 M82 126 l5 8 5 -8" fill="#fff"/>
+  </g>
+  <g class="dragon-hearts" fill="#ff5f8f">
+    <path d="M40 40 c-6 -10 -20 -4 -14 8 l14 12 14 -12 c6 -12 -8 -18 -14 -8 z"/>
+    <path d="M14 70 c-4 -7 -14 -3 -10 5 l10 8 10 -8 c4 -8 -6 -12 -10 -5 z"/>
+  </g>
+</svg>`,
+    `dragon ${extra}`.trim(),
+  );
 }

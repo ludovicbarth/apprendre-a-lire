@@ -15,7 +15,16 @@ en MAJUSCULE, et l'enfant apprend son **son** (et non son nom) en écoutant et e
 - Révision espacée : les sons fragiles reviennent plus souvent. On commence avec A, I, O ;
   U, É et E se débloquent quand les sons précédents sont acquis.
 - Progression et étoiles sauvegardées sur la tablette. Fonctionne hors ligne après la première ouverture.
-- Espace parent (⚙, protégé par une multiplication) : changer le nom, effacer la progression, tester la voix.
+- **L'aventure** : 6 mondes avec chacun leur décor (prairie enchantée, chemin de campagne,
+  forêt maléfique, bord de mer, château en ruine, donjon). Chaque partie fait avancer la sorcière
+  d'une étape sur le chemin ; au bout, un dragon grognon à vaincre en lançant des sorts
+  (une bonne réponse = un sort). Vaincu, il devient gentil et rapporte 10 étoiles bonus.
+  Le dernier monde cache le grand dragon rouge du donjon.
+- **La boutique** : les étoiles s'échangent contre de vrais cadeaux (une pomme 5 ★, un chocolat 10 ★,
+  une partie de jeu 20 ★, un McDo 60 ★, un tour au petit magasin 100 ★). Un achat donne un
+  **bon cadeau** à montrer aux parents, qui le marquent « donné » (protégé par une multiplication).
+- Espace parent (⚙, protégé par une multiplication) : changer le nom, effacer la progression,
+  tester la voix, modifier les prix, ajouter ou retirer des cadeaux, donner ou retirer des étoiles.
 
 La sorcière et le décor sont des illustrations vectorielles (`src/art.ts`). Les images des mots sont
 provisoires (émojis) et seront remplacées par de vraies illustrations.
@@ -37,5 +46,6 @@ npm run dev      # serveur local, accessible depuis la tablette sur le même Wi-
 npm run build    # version de production dans dist/
 ```
 
-Code : `src/content.ts` (sons, mots, images), `src/screens/game.ts` (déroulé du jeu),
+Code : `src/content.ts` (sons, mots, images), `src/screens/game.ts` (déroulé du jeu et combat), `src/worlds.ts` (mondes et dragons),
+`src/scenes.ts` (décors), `src/gifts.ts` (cadeaux), `src/screens/map.ts` et `src/screens/shop.ts`,
 `src/art.ts` (sorcière et décor), `src/speech.ts` (voix), `src/progress.ts` (progression).

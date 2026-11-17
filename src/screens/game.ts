@@ -1,7 +1,9 @@
 import type { App } from '../main';
 import { PRAISE, SOUNDS, type Sound } from '../content';
 import { maybeUnlock, MAX_LEVEL, pickWeighted, unlockedSounds } from '../progress';
-import { witchEl } from '../art';
+import { dragonEl, witchEl } from '../art';
+import { DRAGON_BONUS } from '../gifts';
+import { STEPS_PER_WORLD, WORLDS } from '../worlds';
 import { icon } from '../icons';
 import { recordFor, playBlob, recorderAvailable } from '../recorder';
 import { speak, speakSound, stopSpeaking } from '../speech';
@@ -14,31 +16,48 @@ class Quit extends Error {}
 /**
  * « L'écho magique » : la sorcière prononce un son, l'enfant touche la lettre magique correspondante.
  * Les nouveaux sons sont d'abord présentés (image + mot + répétition au micro).
+ * - mode `step` : une étape du chemin (8 tours) ;
+ * - mode `boss` : combat contre le dragon du monde, chaque bonne réponse lance un sort.
  */
-export async function runSession(app: App): Promise<void> {
+export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Promise<void> {
   const p = app.progress;
   const raw = p.witchName ?? 'LILA';
   const name = raw.charAt(0) + raw.slice(1).toLowerCase();
   let quit = false;
+  const world = WORLDS[p.world];
+  const startStep = p.step;
 
   app.root.replaceChildren();
+  app.showWorldScene();
 
   // --- Mise en page commune ---
   const starCount = h('span', {}, String(p.stars));
   const starsEl = h('div', { class: 'stars' }, h('span', { class: 'star-ico' }, '★'), starCount);
   const dots = h('div', { class: 'dots' });
-  for (let i = 0; i < ROUNDS; i++) dots.append(h('span', { class: 'dot' }));
+  if (mode === 'step') for (let i = 0; i < ROUNDS; i++) dots.append(h('span', { class: 'dot' }));
+  else dots.classList.add('hidden');
   const home = h('button', {
     class: 'btn-home',
     onclick: () => {
       quit = true;
       stopSpeaking();
-      app.go('home');
+      app.go('map');
     },
   }, icon('home'));
   const witch = witchEl('bob');
   const bubble = h('div', { class: 'bubble' });
   const stage = h('div', { class: 'stage' });
+  // `board` reçoit les cartes et les lettres ; en combat, le dragon est affiché au-dessus.
+  const board = h('div', { class: 'board' });
+  const dragon = mode === 'boss' ? dragonEl(world.dragon, 'angry') : null;
+  const hpBar = h('div', { class: 'hp' });
+  let hp = world.hp;
+  const renderHp = () => hpBar.replaceChildren(...Array.from({ length: world.hp }, (_, i) => h('span', { class: `heart ${i < hp ? '' : 'lost'}` }, '♥')));
+  if (dragon) {
+    renderHp();
+    stage.append(h('div', { class: 'dragon-zone' }, hpBar, dragon));
+  }
+  stage.append(board);
 
   app.root.append(
     h(
@@ -69,6 +88,7 @@ export async function runSession(app: App): Promise<void> {
   };
   const addStar = () => {
     p.stars++;
+    p.starsEarned++;
     starCount.textContent = String(p.stars);
     animate(starsEl, 'pop', 400);
   };
@@ -102,7 +122,7 @@ export async function runSession(app: App): Promise<void> {
     const mic = h('button', { class: 'btn btn-round mic', 'aria-label': 'À toi !' }, icon('mic'));
     const next = h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Continuer' }, icon('next'));
     const actions = h('div', { class: 'actions' }, listen, recorderAvailable() && mic, next);
-    stage.replaceChildren(letterCard(s), actions);
+    board.replaceChildren(letterCard(s), actions);
 
     if (intro) await say('Voici une nouvelle lettre magique !');
     await sayLetter(s);
@@ -141,7 +161,7 @@ export async function runSession(app: App): Promise<void> {
     const choices = shuffle([target, ...others]);
     const listen = h('button', { class: 'btn btn-round', 'aria-label': 'Réécouter' }, icon('listen'));
     const tiles = choices.map((s) => h('button', { class: 'tile', 'data-id': s.id }, s.letter));
-    stage.replaceChildren(h('div', { class: 'tiles' }, ...tiles), h('div', { class: 'actions' }, listen));
+    board.replaceChildren(h('div', { class: 'tiles' }, ...tiles), h('div', { class: 'actions' }, listen));
 
     const ask = async () => {
       bubble.textContent = 'Quelle lettre fait ce son ?';
@@ -173,7 +193,11 @@ export async function runSession(app: App): Promise<void> {
           addStar();
         }
         app.save();
-        await say(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+        if (dragon) {
+          await hitDragon();
+        } else {
+          await say(PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+        }
         return firstTry;
       }
       // Erreur : on fait entendre la différence, sans pénalité visible.
@@ -186,48 +210,86 @@ export async function runSession(app: App): Promise<void> {
       firstTry = false;
       btn.classList.add('dim');
       animate(btn, 'shake', 450);
+      if (dragon) animate(dragon, 'laugh', 600);
       await say(`Ça, c'est ${picked.say}.`, `Ça, c'est ${picked.letter}.`);
       await say('Écoute bien…');
       await sound(target);
     }
   }
 
+  /** Un sort file de la baguette vers le dragon. */
+  async function hitDragon() {
+    if (!dragon) return;
+    const from = witch.getBoundingClientRect();
+    const to = dragon.getBoundingClientRect();
+    const spell = h('div', { class: 'spell' }, '★');
+    spell.style.left = `${from.left + from.width * 0.85}px`;
+    spell.style.top = `${from.top + from.height * 0.25}px`;
+    document.body.append(spell);
+    void spell.offsetWidth;
+    spell.style.transform = `translate(${to.left + to.width * 0.35 - from.left - from.width * 0.85}px, ${to.top + to.height * 0.35 - from.top - from.height * 0.25}px) rotate(360deg)`;
+    await wait(550);
+    spell.remove();
+    sparkle(dragon, 16);
+    hp = Math.max(0, hp - 1);
+    renderHp();
+    await animate(dragon, 'hit', 500);
+    const lines = hp > 0 ? ['Paf ! Bien visé !', 'Encore un sort !', 'Il recule !', 'Bravo, continue !'] : ['Dernier sort !'];
+    await say(lines[Math.floor(Math.random() * lines.length)]);
+  }
+
   try {
-    // 1. Présenter les sons débloqués pas encore vus.
-    for (const s of unlockedSounds(p)) {
-      if (!p.sounds[s.id].introduced) {
-        await repeatStep(s, true);
-        p.sounds[s.id].introduced = true;
-        app.save();
+    const pool = () => unlockedSounds(p).filter((s) => p.sounds[s.id].introduced);
+
+    if (mode === 'step') {
+      // 1. Présenter les sons débloqués pas encore vus.
+      for (const s of unlockedSounds(p)) {
+        if (!p.sounds[s.id].introduced) {
+          await repeatStep(s, true);
+          p.sounds[s.id].introduced = true;
+          app.save();
+        }
       }
-    }
 
-    // 2. Quiz avec révision espacée.
-    await say(`On joue à l'écho magique ! Je dis un son, et tu touches la bonne lettre.`, 'L’écho magique !');
-    const pool = unlockedSounds(p).filter((s) => p.sounds[s.id].introduced);
-    let last: string | undefined;
-    for (let r = 0; r < ROUNDS; r++) {
-      const target = pickWeighted(pool, p, last);
-      last = target.id;
-      const ok = await quizRound(target, pool);
-      dots.children[r].classList.add(ok ? 'ok' : 'retry');
-      if (!ok) await repeatStep(target, false);
-      await wait(400);
-    }
+      // 2. Quiz avec révision espacée.
+      await say(`On joue à l'écho magique ! Je dis un son, et tu touches la bonne lettre.`, 'L’écho magique !');
+      let last: string | undefined;
+      for (let r = 0; r < ROUNDS; r++) {
+        const target = pickWeighted(pool(), p, last);
+        last = target.id;
+        const ok = await quizRound(target, pool());
+        dots.children[r].classList.add(ok ? 'ok' : 'retry');
+        if (!ok) await repeatStep(target, false);
+        await wait(400);
+      }
 
-    // 3. Fin de partie.
-    const before = p.unlocked;
-    maybeUnlock(p);
-    app.save();
-    const newLetter = p.unlocked > before ? SOUNDS[p.unlocked - 1] : null;
-    await endScreen(newLetter);
+      // 3. Fin de l'étape : on avance sur le chemin.
+      const before = p.unlocked;
+      maybeUnlock(p);
+      p.step = Math.min(STEPS_PER_WORLD, p.step + 1);
+      app.save();
+      const newLetter = p.unlocked > before ? SOUNDS[p.unlocked - 1] : null;
+      await stepEnd(newLetter);
+    } else {
+      // Combat : chaque bonne réponse lance un sort sur le dragon.
+      await say(`${world.dragonName} bloque le chemin ! Trouve les bonnes lettres pour lancer tes sorts.`, 'Lance tes sorts !');
+      let last: string | undefined;
+      while (hp > 0) {
+        const target = pickWeighted(pool(), p, last);
+        last = target.id;
+        await quizRound(target, pool());
+        await wait(300);
+      }
+      await victory();
+    }
   } catch (e) {
     if (!(e instanceof Quit)) throw e;
   }
 
-  async function endScreen(newLetter: Sound | null) {
+  async function stepEnd(newLetter: Sound | null) {
     check();
-    stage.replaceChildren(
+    const nextIsBoss = p.step === STEPS_PER_WORLD;
+    board.replaceChildren(
       h(
         'div',
         { class: 'card end' },
@@ -238,19 +300,48 @@ export async function runSession(app: App): Promise<void> {
       h(
         'div',
         { class: 'actions' },
-        h('button', { class: 'btn btn-round', 'aria-label': 'Maison', onclick: () => app.go('home') }, icon('home')),
-        h('button', {
-          class: 'btn btn-round btn-go',
-          'aria-label': 'Rejouer',
-          onclick: () => {
-            app.root.replaceChildren();
-            runSession(app);
-          },
-        }, icon('replay')),
+        h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Continuer le chemin', onclick: () => app.go('map', { walkFrom: startStep }) }, icon('next')),
       ),
     );
     cast();
-    await say(`Bravo ! Grâce à toi, ${name} a gagné des étoiles magiques !`);
+    await say(`Bravo ! Grâce à toi, ${name} a gagné des étoiles magiques et avance sur le chemin !`);
     if (newLetter) await say('Et une nouvelle lettre magique est apparue ! Tu la découvriras à la prochaine partie.');
+    if (nextIsBoss) await say('Attention, le dragon est tout près !');
+  }
+
+  async function victory() {
+    check();
+    if (!dragon) return;
+    dragon.classList.remove('angry');
+    dragon.classList.add('friendly');
+    cast();
+    sparkle(dragon, 30);
+    p.stars += DRAGON_BONUS;
+    p.starsEarned += DRAGON_BONUS;
+    starCount.textContent = String(p.stars);
+    animate(starsEl, 'pop', 400);
+    const last = p.world >= WORLDS.length - 1;
+    if (last) p.adventureDone = true;
+    else {
+      p.world++;
+      p.step = 0;
+    }
+    app.save();
+    board.replaceChildren(
+      h(
+        'div',
+        { class: 'card end' },
+        h('div', { class: 'end-title' }, 'Victoire !'),
+        h('div', { class: 'end-new' }, `+${DRAGON_BONUS} ★ bonus`),
+      ),
+      h(
+        'div',
+        { class: 'actions' },
+        h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Continuer', onclick: () => app.go('map') }, icon('next')),
+      ),
+    );
+    await say(`Bravo ! Tu as vaincu ${world.dragonName} ! Il n'est plus grognon : il devient ton ami.`, 'Victoire !');
+    await say(`Tu gagnes ${DRAGON_BONUS} étoiles en plus !`);
+    if (!last) await say(`Prochaine étape : ${WORLDS[p.world].name.toLowerCase()} !`);
   }
 }

@@ -1,6 +1,7 @@
 // Progression sauvegardée sur la tablette (localStorage), avec une révision espacée simple :
 // chaque son a un niveau de 0 à 5 (boîtes de Leitner). Les sons de faible niveau reviennent plus souvent.
 import { SOUNDS, INITIAL_UNLOCKED } from './content';
+import { DEFAULT_GIFTS, type Gift } from './gifts';
 
 export const MAX_LEVEL = 5;
 const KEY = 'apprendre-a-lire:v1';
@@ -12,9 +13,24 @@ export interface SoundProgress {
   wrong: number;
 }
 
+export interface Coupon {
+  id: string;
+  giftId: string;
+  name: string;
+  emoji: string;
+  date: string; // ISO
+  given: boolean;
+}
+
 export interface Progress {
   witchName: string | null;
-  stars: number;
+  stars: number; // étoiles disponibles (dépensables à la boutique)
+  starsEarned: number; // total gagné depuis le début
+  world: number; // index dans WORLDS
+  step: number; // 0..STEPS_PER_WORLD ; STEPS_PER_WORLD = combat contre le dragon
+  adventureDone: boolean;
+  gifts: Gift[];
+  coupons: Coupon[];
   unlocked: number; // nombre de sons débloqués, dans l'ordre de SOUNDS
   sounds: Record<string, SoundProgress>;
 }
@@ -22,7 +38,18 @@ export interface Progress {
 function fresh(): Progress {
   const sounds: Record<string, SoundProgress> = {};
   for (const s of SOUNDS) sounds[s.id] = { level: 0, introduced: false, correct: 0, wrong: 0 };
-  return { witchName: null, stars: 0, unlocked: INITIAL_UNLOCKED, sounds };
+  return {
+    witchName: null,
+    stars: 0,
+    starsEarned: 0,
+    world: 0,
+    step: 0,
+    adventureDone: false,
+    gifts: DEFAULT_GIFTS.map((g) => ({ ...g })),
+    coupons: [],
+    unlocked: INITIAL_UNLOCKED,
+    sounds,
+  };
 }
 
 export function load(): Progress {
