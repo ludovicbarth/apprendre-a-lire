@@ -4,11 +4,10 @@ import {
   availableSyllables,
   availableWords,
   knownLetters,
-  maybeUnlock,
   MAX_LEVEL,
+  nextFusion,
   pickWeighted,
   stat,
-  unlockedLetters,
 } from '../progress';
 import { dragonEl, witchEl } from '../art';
 import { DRAGON_BONUS } from '../gifts';
@@ -18,7 +17,7 @@ import { recordFor, playBlob, recorderAvailable } from '../recorder';
 import { speak, speakSound, stopSpeaking } from '../speech';
 import { animate, h, shuffle, sparkle, wait } from '../ui';
 
-const ROUNDS = 8;
+const ROUNDS = 6;
 
 class Quit extends Error {}
 
@@ -216,14 +215,19 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       // A en premier, puis quelques autres voyelles
       pairs = [...pairs.filter((s) => s.vowel === 'a'), ...shuffle(pairs.filter((s) => s.vowel !== 'a'))].slice(0, 4);
     } else {
-      pairs = shuffle(SYLLABLES.filter((s) => s.vowel === l.id && known.has(s.consonant))).slice(0, 4);
+      pairs = shuffle(SYLLABLES.filter((s) => s.vowel === l.id && p.fused.includes(s.consonant))).slice(0, 4);
     }
     if (!pairs.length) return;
 
     const listen = h('button', { class: 'btn btn-round', 'aria-label': 'Écouter' }, icon('listen'));
     const next = h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Continuer' }, icon('next'));
-    board.replaceChildren(h('div', { class: 'card fusion' }, h('div', { class: 'cauldron-pot' }, '🪄')));
-    await say('Dans mon chaudron magique, les lettres se mélangent pour faire des syllabes !', 'Le chaudron magique');
+    board.replaceChildren(h('div', { class: 'card fusion' }, h('div', { class: 'letter-big' }, l.letter), h('div', { class: 'cauldron-pot' }, '🪄')));
+    await say(
+      l.kind === 'consonant'
+        ? `Au chaudron magique ! Cette lettre chante au début de ${l.wordSay}. Mélangeons-la avec les voyelles !`
+        : 'Au chaudron magique ! Mélangeons ce son avec des lettres !',
+      'Le chaudron magique',
+    );
 
     for (const s of pairs) {
       const c = LETTERS.find((x) => x.id === s.consonant)!;
@@ -288,8 +292,8 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       correctId: l.id,
       penalizePicked: true,
       onWrong: async (c) => {
-        if (c.say) await say(`Ça, c'est ${c.say}.`, `Ça, c'est ${c.label}.`);
-        await say('Écoute bien…');
+        if (c.say) await say(`Non, ça c'est ${c.say}. Écoute :`, `Ça, c'est ${c.label}.`);
+        else await say('Non. Écoute :');
         await sound(l.say);
       },
     };
@@ -313,7 +317,7 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       correctId: l.id,
       penalizePicked: true,
       onWrong: async () => {
-        await say('Écoute bien le début du mot…');
+        await say('Non. Écoute bien le début :', 'Écoute bien le début du mot…');
         await word(e.wordSay);
       },
       onRight: async () => {
@@ -339,8 +343,7 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       correctId: s.id,
       penalizePicked: true,
       onWrong: async (c) => {
-        await say(`Ça, c'est ${c.say}.`, `Ça, c'est ${c.label}.`);
-        await say('Écoute bien…');
+        await say(`Non, ça c'est ${c.say}. Écoute :`, `Ça, c'est ${c.label}.`);
         await sound(s.say);
       },
     };
@@ -363,21 +366,24 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       penalizePicked: false,
       helpSay: w.say,
       onWrong: async (c) => {
-        await say(`Ça, c'est ${c.say}.`, `Ça, c'est ${c.say}…`);
-        await say('Relis bien le mot, syllabe par syllabe.');
+        await say(`Non, ça c'est ${c.say}. Relis bien le mot !`, `Ça, c'est ${c.say}… Relis bien le mot !`);
       },
       onRight: () => word(w.say),
     };
   }
 
-  /** Choisit le prochain exercice parmi ce que l'enfant connaît déjà. */
-  function nextRound(lastId?: string): { spec: RoundSpec; letter?: Letter } {
+  /**
+   * Choisit le prochain exercice parmi ce que l'enfant connaît déjà, sans reposer une question
+   * déjà vue récemment quand d'autres sont possibles.
+   */
+  function nextRound(recent: string[]): { spec: RoundSpec; letter?: Letter } {
+    const notRecent = <T extends { id: string }>(xs: T[]) => xs.filter((x) => !recent.includes(x.id));
     const letters = knownLetters(p);
     const syls = availableSyllables(p);
     const words = availableWords(p);
-    const kinds: ['letter' | 'syllable' | 'word', number][] = [['letter', 5]];
-    if (syls.length >= 3) kinds.push(['syllable', 4]);
-    if (words.length >= 1) kinds.push(['word', 3 + Math.min(3, words.length / 4)]);
+    const kinds: ['letter' | 'syllable' | 'word', number][] = [['letter', 4]];
+    if (syls.length >= 3 && notRecent(syls).length) kinds.push(['syllable', 4]);
+    if (words.length >= 3 && notRecent(words).length) kinds.push(['word', 2 + Math.min(4, words.length / 4)]);
     let r = Math.random() * kinds.reduce((a, [, w]) => a + w, 0);
     let kind = kinds[0][0];
     for (const [k, w] of kinds) {
@@ -387,9 +393,9 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
         break;
       }
     }
-    if (kind === 'syllable') return { spec: syllableRound(pickWeighted(syls, p, lastId), syls) };
-    if (kind === 'word') return { spec: wordRound(pickWeighted(words, p, lastId)) };
-    const l = pickWeighted(letters, p, lastId);
+    if (kind === 'syllable') return { spec: syllableRound(pickWeighted(syls, p, recent), syls) };
+    if (kind === 'word') return { spec: wordRound(pickWeighted(words, p, recent)) };
+    const l = pickWeighted(letters, p, recent);
     return { spec: l.kind === 'vowel' ? soundRound(l) : initialRound(l), letter: l };
   }
 
@@ -477,42 +483,44 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
 
   // ------------------------------------------------------------ déroulé
   try {
+    // Questions déjà posées : pas de répétition pendant la partie (12 dernières pour un long combat).
+    const recent: string[] = [];
+    const remember = (id: string) => {
+      recent.push(id);
+      if (recent.length > 12) recent.shift();
+    };
     if (mode === 'step') {
-      // 1. Présenter les lettres débloquées pas encore vues (puis le chaudron des syllabes).
-      for (const l of unlockedLetters(p)) {
-        if (!stat(p, l.id).introduced) {
-          await letterStep(l, true);
-          stat(p, l.id).introduced = true;
-          app.save();
-          await fusionStep(l);
-        }
+      // 1. Le chaudron : une nouvelle consonne (ou un son complexe) en syllabes à chaque partie.
+      const nf = nextFusion(p);
+      p.sinceFusion = (p.sinceFusion ?? 0) + 1;
+      if (nf) {
+        p.sinceFusion = 0;
+        if (nf.kind === 'vowel') await letterStep(nf, true);
+        p.fused.push(nf.id);
+        stat(p, nf.id).introduced = true;
+        app.save();
+        await fusionStep(nf);
       }
 
-      // 2. Exercices variés avec révision espacée.
-      await say(`C'est parti pour l'écho magique !`, 'L’écho magique !');
-      let last: string | undefined;
+      // 2. Exercices variés sur tout l'alphabet, avec révision espacée.
+      bubble.textContent = 'L’écho magique !';
       for (let r = 0; r < ROUNDS; r++) {
-        const { spec, letter } = nextRound(last);
-        last = spec.statId;
+        const { spec } = nextRound(recent);
+        remember(spec.statId);
         const ok = await playRound(spec);
         dots.children[r].classList.add(ok ? 'ok' : 'retry');
-        if (!ok && letter) await letterStep(letter, false);
-        await wait(400);
+        await wait(300);
       }
 
       // 3. Fin de l'étape : on avance sur le chemin.
-      const before = p.unlocked;
-      maybeUnlock(p);
       p.step = Math.min(STEPS_PER_WORLD, p.step + 1);
       app.save();
-      const newLetter = p.unlocked > before ? LETTERS[p.unlocked - 1] : null;
-      await stepEnd(newLetter);
+      await stepEnd();
     } else {
-      await say(`${world.dragonName} bloque le chemin ! Trouve les bonnes réponses pour lancer tes sorts.`, 'Lance tes sorts !');
-      let last: string | undefined;
+      await say(`${world.dragonName} bloque le chemin ! Lance tes sorts !`, 'Lance tes sorts !');
       while (hp > 0) {
-        const { spec } = nextRound(last);
-        last = spec.statId;
+        const { spec } = nextRound(recent);
+        remember(spec.statId);
         await playRound(spec);
         await wait(300);
       }
@@ -522,7 +530,7 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
     if (!(e instanceof Quit)) throw e;
   }
 
-  async function stepEnd(newLetter: Letter | null) {
+  async function stepEnd() {
     check();
     const nextIsBoss = p.step === STEPS_PER_WORLD;
     board.replaceChildren(
@@ -531,7 +539,6 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
         { class: 'card end' },
         h('div', { class: 'end-title' }, 'Bravo !'),
         h('div', { class: 'end-stars' }, '★ ', String(p.stars)),
-        newLetter && h('div', { class: 'end-new' }, 'Une nouvelle lettre magique t’attend !'),
       ),
       h(
         'div',
@@ -540,9 +547,7 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       ),
     );
     cast();
-    await say(`Bravo ! Grâce à toi, ${name} a gagné des étoiles magiques et avance sur le chemin !`);
-    if (newLetter) await say('Et une nouvelle lettre magique est apparue ! Tu la découvriras à la prochaine partie.');
-    if (nextIsBoss) await say('Attention, le dragon est tout près !');
+    await say(nextIsBoss ? `Bravo ! ${name} avance… Attention, le dragon est tout près !` : `Bravo ! ${name} avance sur le chemin !`);
   }
 
   async function victory() {
@@ -567,8 +572,6 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       h('div', { class: 'card end' }, h('div', { class: 'end-title' }, 'Victoire !'), h('div', { class: 'end-new' }, `+${DRAGON_BONUS} ★ bonus`)),
       h('div', { class: 'actions' }, h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Continuer', onclick: () => app.go('map') }, icon('next'))),
     );
-    await say(`Bravo ! Tu as vaincu ${world.dragonName} ! Il n'est plus grognon : il devient ton ami.`, 'Victoire !');
-    await say(`Tu gagnes ${DRAGON_BONUS} étoiles en plus !`);
-    if (!last) await say(`Prochaine étape : ${WORLDS[p.world].name.toLowerCase()} !`);
+    await say(`Victoire ! ${world.dragonName} devient ton ami. Tu gagnes ${DRAGON_BONUS} étoiles en plus !`, 'Victoire !');
   }
 }

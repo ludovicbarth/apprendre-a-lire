@@ -13,12 +13,13 @@ export function showHome(app: App): void {
   const world = WORLDS[Math.min(p.world, WORLDS.length - 1)];
 
   const letters = h('div', { class: 'letter-strip' });
-  LETTERS.forEach((s, i) => {
-    const unlocked = i < p.unlocked && p.sounds[s.id].introduced;
+  LETTERS.forEach((s) => {
+    // Lettres « magiques » : celles déjà passées au chaudron (les voyelles simples le sont d'emblée).
+    const unlocked = (s.kind === 'vowel' && s.letter.length === 1) || p.fused.includes(s.id);
     letters.append(h('div', { class: `mini-letter ${unlocked ? '' : 'locked'}` }, unlocked ? s.letter : '?'));
   });
 
-  const witch = witchEl('big bob');
+  const witch = witchEl('bob');
   witch.addEventListener('click', () => speak(`Coucou ! C'est moi, ${name.charAt(0) + name.slice(1).toLowerCase()} !`));
 
   const pending = p.coupons.filter((c) => !c.given).length;
@@ -33,19 +34,27 @@ export function showHome(app: App): void {
         h('div', { class: 'stars' }, h('span', { class: 'star-ico' }, '★'), String(p.stars)),
         h('button', { class: 'btn-parent', 'aria-label': 'Espace parent', onclick: () => parentMenu(app) }, icon('gear')),
       ),
-      h('div', { class: 'home-head' }, h('h1', { class: 'title' }, name), h('div', { class: 'world-chip' }, world.name)),
-      witch,
-      h('div', { class: 'strip-label' }, 'Mes lettres magiques'),
-      letters,
       h(
         'div',
-        { class: 'home-actions' },
-        h('button', { class: 'btn btn-shop', onclick: () => app.go('shop') },
-          h('span', { class: 'shop-ico' }, '🎁'), 'Boutique',
-          pending ? h('span', { class: 'badge' }, String(pending)) : null),
-        h('button', { class: 'btn btn-play', onclick: () => app.go('map') }, 'Jouer'),
+        { class: 'home-main' },
+        h('div', { class: 'home-witch' }, witch),
+        h(
+          'div',
+          { class: 'home-side' },
+          h('div', { class: 'home-head' }, h('h1', { class: 'title' }, name), h('div', { class: 'world-chip' }, world.name)),
+          h('div', { class: 'strip-label' }, 'Mes lettres magiques'),
+          letters,
+          h(
+            'div',
+            { class: 'home-actions' },
+            h('button', { class: 'btn btn-play', onclick: () => app.go('map') }, 'Jouer'),
+            h('button', { class: 'btn btn-shop', onclick: () => app.go('shop') },
+              h('span', { class: 'shop-ico' }, '🎁'), 'Boutique',
+              pending ? h('span', { class: 'badge' }, String(pending)) : null),
+          ),
+          !speechAvailable() && h('p', { class: 'warn' }, 'La voix ne fonctionne pas dans ce navigateur. Utilisez Chrome.'),
+        ),
       ),
-      !speechAvailable() && h('p', { class: 'warn' }, 'La voix ne fonctionne pas dans ce navigateur. Utilisez Chrome.'),
     ),
   );
 }

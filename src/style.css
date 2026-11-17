@@ -209,7 +209,7 @@ button { font-family: var(--title-font); color: var(--ink); cursor: pointer; bor
 .node.boss .dragon { width: 110px; }
 .walker { position: absolute; width: clamp(80px, 11vw, 120px); transform: translate(-50%, -96%); transition: left 1.3s ease-in-out, top 1.3s ease-in-out; pointer-events: none; z-index: 2; }
 .walker.walking { animation: hop .32s ease-in-out infinite; }
-.map > .btn-play { margin-bottom: 4px; }
+.map > .btn-play { margin-bottom: 14px; }
 
 /* ---------- Dragon ---------- */
 .dragon svg { width: 100%; height: auto; display: block; overflow: visible; }
@@ -314,3 +314,35 @@ button { font-family: var(--title-font); color: var(--ink); cursor: pointer; bor
 .tile.result.show { opacity: 1; transform: scale(1); background: linear-gradient(160deg, #fff, #f6efff); }
 .tiles .tile.syl { width: auto; min-width: clamp(120px, 19vh, 175px); padding: 0 16px; }
 .fusion-row.merged .plus { opacity: 0; transition: opacity .3s; }
+
+/* ---------- Accueil : tout tient dans l'écran, quelle que soit la taille de la tablette ---------- */
+.screen.home { justify-content: flex-start; gap: 8px; }
+.home-main {
+  flex: 1; min-height: 0; width: 100%; max-width: 1100px;
+  display: flex; align-items: center; justify-content: center; gap: clamp(16px, 4vw, 56px);
+}
+.home-witch { flex: 0 1 auto; height: 100%; max-height: 520px; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.home-witch .witch { height: 100%; width: auto; max-width: 42vw; display: flex; align-items: center; }
+.home-witch .witch svg { height: 100%; width: auto; max-height: 100%; }
+.home-side { flex: 0 1 auto; display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
+.home-side .letter-strip { max-width: min(46vw, 520px); }
+.home-actions { flex-direction: column; gap: 16px; margin-top: 6px; }
+.home-actions .btn-play { padding: 16px 70px; }
+.home-actions .btn-shop { font-size: clamp(18px, 2.4vw, 24px); padding: 12px 26px; }
+
+/* Portrait : la sorcière au-dessus, plus petite ; les boutons côte à côte */
+@media (max-aspect-ratio: 1/1) {
+  .home-main { flex-direction: column; gap: 10px; }
+  .home-witch { flex: 1 1 0; height: auto; max-height: none; width: 100%; }
+  .home-witch .witch { max-width: 70vw; }
+  .home-side .letter-strip { max-width: 92vw; }
+  .home-actions { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+}
+/* Écrans peu hauts : on resserre tout */
+@media (max-height: 640px) {
+  .home-side { gap: 8px; }
+  .home-side .title { font-size: 28px; }
+  .mini-letter { width: 32px; height: 36px; font-size: 18px; border-radius: 10px; }
+  .home-actions .btn-play { font-size: 24px; padding: 12px 48px; }
+}
+.home-actions { margin-bottom: 12px; }

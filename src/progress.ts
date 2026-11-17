@@ -1,6 +1,6 @@
 // Progression sauvegardée sur la tablette (localStorage), avec une révision espacée simple :
 // chaque son a un niveau de 0 à 5 (boîtes de Leitner). Les sons de faible niveau reviennent plus souvent.
-import { LETTERS, SYLLABLES, WORDS, INITIAL_UNLOCKED, type Letter } from './content';
+import { FUSION_ORDER, LETTERS, SYLLABLES, WORDS, isComplex, type Letter } from './content';
 import { DEFAULT_GIFTS, type Gift } from './gifts';
 
 export const MAX_LEVEL = 5;
@@ -31,7 +31,10 @@ export interface Progress {
   adventureDone: boolean;
   gifts: Gift[];
   coupons: Coupon[];
-  unlocked: number; // nombre de lettres débloquées, dans l'ordre de LETTERS
+  /** Consonnes et sons complexes déjà passés au chaudron (ils ouvrent les syllabes et les mots). */
+  fused: string[];
+  /** Parties jouées depuis le dernier passage au chaudron. */
+  sinceFusion: number;
   sounds: Record<string, SoundProgress>; // statistiques par lettre, syllabe (« syl:ma ») et mot (« mot:moto »)
 }
 
@@ -47,7 +50,8 @@ function fresh(): Progress {
     adventureDone: false,
     gifts: DEFAULT_GIFTS.map((g) => ({ ...g })),
     coupons: [],
-    unlocked: INITIAL_UNLOCKED,
+    fused: [],
+    sinceFusion: 0,
     sounds,
   };
 }
@@ -57,8 +61,12 @@ export function load(): Progress {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return base;
-    const saved = JSON.parse(raw) as Partial<Progress>;
-    return { ...base, ...saved, sounds: { ...base.sounds, ...(saved.sounds ?? {}) } };
+    const saved = JSON.parse(raw) as Partial<Progress> & { unlocked?: number };
+    const p: Progress = { ...base, ...saved, sounds: { ...base.sounds, ...(saved.sounds ?? {}) } };
+    // Anciennes sauvegardes : les consonnes et sons complexes déjà présentés comptent comme passés au chaudron.
+    if (!saved.fused) p.fused = FUSION_ORDER.filter((l) => p.sounds[l.id]?.introduced).map((l) => l.id);
+    delete (p as { unlocked?: number }).unlocked;
+    return p;
   } catch {
     return base;
   }
@@ -83,42 +91,44 @@ export function stat(p: Progress, id: string): SoundProgress {
   return (p.sounds[id] ??= { level: 0, introduced: false, correct: 0, wrong: 0 });
 }
 
-export function unlockedLetters(p: Progress): Letter[] {
-  return LETTERS.slice(0, p.unlocked);
+/**
+ * Lettres utilisées dans les exercices : tout l'alphabet dès le début (l'enfant connaît ses lettres),
+ * les sons complexes (OU, ON…) seulement après leur passage au chaudron.
+ */
+export function knownLetters(p: Progress): Letter[] {
+  return LETTERS.filter((l) => !isComplex(l) || p.fused.includes(l.id));
 }
 
-/** Lettres déjà présentées à l'enfant. */
-export function knownLetters(p: Progress): Letter[] {
-  return unlockedLetters(p).filter((l) => stat(p, l.id).introduced);
-}
+const vowelOk = (p: Progress, id: string) => {
+  const l = LETTERS.find((x) => x.id === id)!;
+  return l.kind === 'vowel' ? !isComplex(l) || p.fused.includes(id) : p.fused.includes(id);
+};
 
 export function availableSyllables(p: Progress) {
-  const known = new Set(knownLetters(p).map((l) => l.id));
-  return SYLLABLES.filter((s) => known.has(s.consonant) && known.has(s.vowel));
+  return SYLLABLES.filter((s) => p.fused.includes(s.consonant) && vowelOk(p, s.vowel));
 }
 
 export function availableWords(p: Progress) {
-  const known = new Set(knownLetters(p).map((l) => l.id));
-  return WORDS.filter((w) => w.letters.every((id) => known.has(id)));
+  return WORDS.filter((w) => w.letters.every((id) => vowelOk(p, id)));
 }
 
 /**
- * Débloque la lettre suivante quand la dernière découverte est acquise (niveau 2)
- * et que la plupart des lettres connues le sont aussi.
+ * Prochaine lettre à passer au chaudron, s'il est temps : dès que l'enfant a réussi au moins
+ * deux syllabes de la précédente, et au plus tard toutes les 3 parties pour garder de la variété.
  */
-export function maybeUnlock(p: Progress): boolean {
-  if (p.unlocked >= LETTERS.length) return false;
-  const letters = unlockedLetters(p);
-  const newest = letters[letters.length - 1];
-  const solid = letters.filter((l) => stat(p, l.id).level >= 2).length;
-  const ok = stat(p, newest.id).level >= 2 && solid >= Math.ceil(letters.length * 0.7);
-  if (ok) p.unlocked++;
-  return ok;
+export function nextFusion(p: Progress): Letter | null {
+  const next = FUSION_ORDER.find((l) => !p.fused.includes(l.id));
+  if (!next) return null;
+  const lastId = p.fused[p.fused.length - 1];
+  if (!lastId) return next;
+  const mastered = SYLLABLES.filter((s) => (s.consonant === lastId || s.vowel === lastId) && (p.sounds[s.id]?.level ?? 0) >= 1);
+  return mastered.length >= 2 || p.sinceFusion >= 2 ? next : null;
 }
 
-/** Tirage pondéré : plus un élément est fragile, plus il a de chances d'être choisi. */
-export function pickWeighted<T extends { id: string }>(items: T[], p: Progress, avoidId?: string): T {
-  const pool = items.length > 1 && avoidId ? items.filter((i) => i.id !== avoidId) : items;
+/** Tirage pondéré : plus un élément est fragile, plus il a de chances d'être choisi. Évite les éléments récents. */
+export function pickWeighted<T extends { id: string }>(items: T[], p: Progress, avoid: string[] = []): T {
+  const fresh = items.filter((i) => !avoid.includes(i.id));
+  const pool = fresh.length ? fresh : items;
   const weights = pool.map((i) => MAX_LEVEL + 1 - (p.sounds[i.id]?.level ?? 0));
   let r = Math.random() * weights.reduce((a, b) => a + b, 0);
   for (let k = 0; k < pool.length; k++) {

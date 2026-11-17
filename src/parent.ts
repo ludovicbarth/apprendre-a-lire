@@ -1,7 +1,7 @@
 // Espace parent : protégé par une multiplication, géré par de simples boîtes de dialogue.
 import type { App } from './main';
 import { speak } from './speech';
-import { LETTERS } from './content';
+import { FUSION_ORDER } from './content';
 
 export function parentGate(): boolean {
   const a = 3 + Math.floor(Math.random() * 6);
@@ -25,7 +25,7 @@ export function parentMenu(app: App): void {
       '5 : ajouter un cadeau',
       '6 : retirer un cadeau',
       '7 : donner ou retirer des étoiles',
-      `8 : débloquer la lettre suivante (${p.unlocked} / ${LETTERS.length} débloquées)`,
+      `8 : passer la lettre suivante au chaudron (${p.fused.length} / ${FUSION_ORDER.length})`,
     ].join('\n'),
   );
   const giftList = () => p.gifts.map((g, i) => `${i + 1} : ${g.emoji} ${g.name} (${g.price} ★)`).join('\n');
@@ -76,7 +76,10 @@ export function parentMenu(app: App): void {
       break;
     }
     case '8':
-      if (p.unlocked < LETTERS.length) p.unlocked++;
+      {
+        const next = FUSION_ORDER.find((l) => !p.fused.includes(l.id));
+        if (next) p.fused.push(next.id);
+      }
       break;
     case '7': {
       const n = Number(window.prompt('Combien d’étoiles ajouter ? (nombre négatif pour en retirer)', '5'));

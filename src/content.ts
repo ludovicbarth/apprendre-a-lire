@@ -36,7 +36,7 @@ const cons = (id: string, letter: string, e: Example, ...more: Example[]): Lette
   more,
 });
 
-/** Ordre de découverte. Les 6 premières sont les voyelles (compatibles avec les sauvegardes existantes). */
+/** Toutes les lettres, dans l'ordre de la méthode syllabique. */
 export const LETTERS: Letter[] = [
   vowel('a', 'A', 'a', ex('ANANAS', 'ananas', '🍍', 'A')),
   vowel('i', 'I', 'i', ex('ÎLE', 'île', '🏝️', 'Î')),
@@ -67,7 +67,11 @@ export const LETTERS: Letter[] = [
   vowel('in', 'IN', 'in', ex('LAPIN', 'lapin', '🐰', 'IN')),
 ];
 
-export const INITIAL_UNLOCKED = 3;
+/** Son complexe écrit avec deux lettres (OU, ON, AN, OI, IN). */
+export const isComplex = (l: Letter) => l.kind === 'vowel' && l.letter.length > 1;
+
+/** Ordre du chaudron : chaque partie fait découvrir une nouvelle consonne (ou un son complexe) en syllabes. */
+export const FUSION_ORDER: Letter[] = LETTERS.filter((l) => l.kind === 'consonant' || isComplex(l));
 
 const byLetter = new Map(LETTERS.map((l) => [l.letter, l]));
 
@@ -193,4 +197,4 @@ export const WORDS: Word[] = [
 
 export const WITCH_NAMES = ['LILA', 'PRUNE', 'MIRA', 'ZÉLIE', 'NOA', 'ÉMA'];
 
-export const PRAISE = ['Bravo !', 'Super !', 'Magnifique !', 'Tu es une vraie magicienne !', 'Génial !', 'Oui, bien joué !'];
+export const PRAISE = ['Bravo !', 'Super !', 'Oui !', 'Génial !', 'Bien joué !', 'Magique !'];

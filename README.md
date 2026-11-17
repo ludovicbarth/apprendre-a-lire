@@ -7,18 +7,15 @@ en MAJUSCULE, et l'enfant apprend son **son** (et non son nom) en écoutant et e
 ## Phase 1 (prototype)
 
 - Choix du nom de la sorcière par l'enfant au premier lancement.
-- **Découverte d'une lettre magique** : grande lettre, image, mot avec le son en couleur,
-  voix de synthèse (« a… comme ananas »), puis **🎤 À toi !** : l'enfant s'enregistre,
-  se réécoute et compare avec la sorcière (rien n'est conservé ni envoyé).
-- **L'écho magique** : la sorcière dit un son, l'enfant touche la bonne lettre parmi 3.
-  8 tours par partie, sans chrono ni pénalité ; une erreur fait réentendre la différence.
-- **Programme complet** (`src/content.ts`), une lettre débloquée à la fois quand les précédentes sont acquises :
-  1. voyelles A, I, O, U, É, E — par leur son ;
-  2. consonnes L, M, R, S, F, V, N, CH, J, P, T, D, B, C, G, Z — par le début des mots
-     (la synthèse vocale ne sait pas prononcer une consonne seule) ;
-  3. sons complexes OU, ON, AN, OI, IN, intercalés au fil des consonnes.
-- **Le chaudron magique** : à chaque nouvelle consonne, la sorcière montre la fusion avec les
-  voyelles connues (M + A = MA, M + I = MI…).
+- **Tout l'alphabet dès le départ** (l'enfant connaît ses lettres) : voyelles A, I, O, U, É, E
+  par leur son, consonnes par le début des mots (la synthèse vocale ne sait pas prononcer
+  une consonne seule).
+- **Le chaudron magique** : à chaque partie, une nouvelle consonne (L, M, R, S, F, V, N, CH, J,
+  P, T, D, B, C, G, Z) ou un son complexe (OU, ON, AN, OI, IN, avec sa carte de découverte et
+  **🎤 À toi !**) fusionne avec les voyelles : M + A = MA… Cela ouvre ses syllabes et les mots
+  qui l'utilisent. La suivante attend que deux syllabes de la précédente soient réussies.
+- **L'écho magique** : 6 tours courts par partie, sans chrono ni pénalité ; une erreur fait
+  réentendre la différence, et une même question ne revient pas dans les tours suivants.
 - **Exercices mélangés** à chaque partie, selon ce que l'enfant connaît :
   son d'une voyelle → trouver la lettre ; image → trouver la première lettre du mot ;
   syllabe entendue → la retrouver parmi 3 ; **mot écrit → toucher la bonne image** (vraie lecture).
@@ -35,7 +32,7 @@ en MAJUSCULE, et l'enfant apprend son **son** (et non son nom) en écoutant et e
   une partie de jeu 20 ★, un McDo 60 ★, un tour au petit magasin 100 ★). Un achat donne un
   **bon cadeau** à montrer aux parents, qui le marquent « donné » (protégé par une multiplication).
 - Espace parent (⚙, protégé par une multiplication) : changer le nom, effacer la progression,
-  tester la voix, débloquer la lettre suivante, modifier les prix, ajouter ou retirer des cadeaux, donner ou retirer des étoiles.
+  tester la voix, passer la lettre suivante au chaudron, modifier les prix, ajouter ou retirer des cadeaux, donner ou retirer des étoiles.
 
 La sorcière et le décor sont des illustrations vectorielles (`src/art.ts`). Les images des mots sont
 provisoires (émojis) et seront remplacées par de vraies illustrations.
