@@ -346,3 +346,16 @@ button { font-family: var(--title-font); color: var(--ink); cursor: pointer; bor
   .home-actions .btn-play { font-size: 24px; padding: 12px 48px; }
 }
 .home-actions { margin-bottom: 12px; }
+
+/* ---------- Découverte de la lettre du jour (6 cartes) ---------- */
+.disc-dots { display: flex; gap: 8px; padding: 8px 12px; background: var(--card); border-radius: 999px; box-shadow: var(--shadow); }
+.disc-dots .dot.current { background: var(--pink); transform: scale(1.2); }
+.board .card { animation: rise .35s ease-out; }
+@media (max-height: 640px) {
+  .board { gap: 12px; }
+  .letter-big { font-size: clamp(60px, 14vh, 110px); }
+  .picture { font-size: clamp(48px, 10vh, 80px); }
+  .word { font-size: clamp(26px, 5vh, 40px); }
+  .btn-round { width: 64px; height: 64px; }
+  .icon { width: 30px; height: 30px; }
+}

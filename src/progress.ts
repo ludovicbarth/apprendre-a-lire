@@ -113,14 +113,17 @@ export function availableWords(p: Progress) {
 }
 
 /**
- * Prochaine lettre à passer au chaudron, s'il est temps : dès que l'enfant a réussi au moins
- * deux syllabes de la précédente, et au plus tard toutes les 3 parties pour garder de la variété.
+ * Lettre du jour (découverte en 6 cartes puis chaudron), s'il est temps : dès que l'enfant a réussi
+ * au moins deux syllabes de la précédente, et au plus tard toutes les 3 parties.
  */
 export function nextFusion(p: Progress): Letter | null {
   const next = FUSION_ORDER.find((l) => !p.fused.includes(l.id));
   if (!next) return null;
   const lastId = p.fused[p.fused.length - 1];
   if (!lastId) return next;
+  // Après une voyelle simple (pas de syllabes à réussir), on passe directement à la suivante.
+  const last = LETTERS.find((l) => l.id === lastId)!;
+  if (last.kind === 'vowel' && !isComplex(last)) return next;
   const mastered = SYLLABLES.filter((s) => (s.consonant === lastId || s.vowel === lastId) && (p.sounds[s.id]?.level ?? 0) >= 1);
   return mastered.length >= 2 || p.sinceFusion >= 2 ? next : null;
 }

@@ -157,53 +157,65 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
   const letterCard = (l: Letter, e: Example = l) =>
     h('div', { class: 'card' }, h('div', { class: 'letter-big' }, l.letter), h('div', { class: 'picture' }, e.emoji), highlighted(e));
 
-  // ------------------------------------------------------------ découverte d'une lettre
-  async function sayLetter(l: Letter) {
-    if (l.kind === 'vowel') {
-      await sound(l.say);
-      await wait(250);
-      await say(`${l.say}, comme ${l.wordSay}`, `${l.letter} … comme ${l.word}`);
-    } else {
-      await say(`On l'entend au début de ${l.wordSay}.`, `${l.letter} … comme ${l.word}`);
-      await wait(200);
-      await word(l.wordSay);
-    }
-  }
-
-  /** Présentation d'une lettre puis « À toi ! » : l'enfant répète au micro et s'écoute. */
-  async function letterStep(l: Letter, intro: boolean) {
+  // ------------------------------------------------------------ découverte d'une lettre : 6 cartes images
+  /**
+   * Avant l'écho magique, la lettre du jour est présentée avec 6 mots illustrés : pour chacun, la
+   * sorcière dit le son de la lettre puis le mot entier, et l'enfant peut répéter au micro.
+   */
+  async function discoveryStep(l: Letter) {
     check();
-    const listen = h('button', { class: 'btn btn-round', 'aria-label': 'Écouter' }, icon('listen'));
-    const mic = h('button', { class: 'btn btn-round mic', 'aria-label': 'À toi !' }, icon('mic'));
-    const next = h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Continuer' }, icon('next'));
-    board.replaceChildren(letterCard(l), h('div', { class: 'actions' }, listen, recorderAvailable() && mic, next));
+    const examples = [l as Example, ...(l.more ?? [])].slice(0, 6);
+    const progress = h('div', { class: 'disc-dots' }, ...examples.map(() => h('span', { class: 'dot' })));
+    const intro = `Voici la lettre magique du jour ! Elle fait ${l.say}.`;
+    bubble.textContent = 'La lettre du jour';
+    let first = true;
 
-    if (intro) await say('Voici une nouvelle lettre magique !');
-    await sayLetter(l);
-    const model = l.kind === 'vowel' ? l.say : l.wordSay;
-    await say(`À toi ! Répète : ${model}`, `À toi ! Répète : ${l.kind === 'vowel' ? l.letter : l.word}`);
+    for (let i = 0; i < examples.length; i++) {
+      const e = examples[i];
+      const listen = h('button', { class: 'btn btn-round', 'aria-label': 'Écouter' }, icon('listen'));
+      const mic = h('button', { class: 'btn btn-round mic', 'aria-label': 'À toi !' }, icon('mic'));
+      const next = h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Carte suivante' }, icon('next'));
+      [...progress.children].forEach((d, k) => {
+        d.classList.toggle('ok', k < i);
+        d.classList.toggle('current', k === i);
+      });
+      board.replaceChildren(progress, letterCard(l, e), h('div', { class: 'actions' }, listen, recorderAvailable() && mic, next));
 
-    listen.onclick = () => sayLetter(l).catch(() => {});
-    mic.onclick = async () => {
-      if (mic.classList.contains('rec')) return;
-      try {
-        mic.classList.add('rec');
-        bubble.textContent = 'Je t’écoute…';
-        const blob = await recordFor(2500);
-        mic.classList.remove('rec');
-        bubble.textContent = 'Écoute-toi !';
-        await playBlob(blob);
-        await wait(300);
-        bubble.textContent = 'Et moi :';
-        await (l.kind === 'vowel' ? speakSound(l.say) : speak(l.wordSay, { rate: 0.7 }));
-        bubble.textContent = 'Bravo ! Tu peux recommencer ou continuer.';
-        cast();
-      } catch {
-        mic.classList.remove('rec');
-        bubble.textContent = 'Le micro n’est pas disponible.';
+      const present = async () => {
+        await sound(l.say);
+        await wait(200);
+        bubble.textContent = `${l.letter} … ${e.word}`;
+        await word(e.wordSay);
+      };
+      if (first) {
+        await say(intro, `La lettre ${l.letter}`);
+        first = false;
       }
-    };
-    await waitNext(next);
+      await present();
+
+      listen.onclick = () => present().catch(() => {});
+      mic.onclick = async () => {
+        if (mic.classList.contains('rec')) return;
+        try {
+          mic.classList.add('rec');
+          bubble.textContent = 'À toi ! Je t’écoute…';
+          const blob = await recordFor(2500);
+          mic.classList.remove('rec');
+          bubble.textContent = 'Écoute-toi !';
+          await playBlob(blob);
+          await wait(300);
+          bubble.textContent = 'Et moi :';
+          await speakSound(l.say);
+          await speak(e.wordSay, { rate: 0.7 });
+          bubble.textContent = 'Bravo !';
+          cast();
+        } catch {
+          mic.classList.remove('rec');
+          bubble.textContent = 'Le micro n’est pas disponible.';
+        }
+      };
+      await waitNext(next);
+    }
   }
 
   // ------------------------------------------------------------ le chaudron : fusion des syllabes
@@ -301,7 +313,8 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
 
   /** Consonne : une image, l'enfant trouve la lettre du début du mot. */
   function initialRound(l: Letter): RoundSpec {
-    const e = shuffle([l as Example, ...(l.more ?? [])])[0];
+    // Seulement les mots qui COMMENCENT par la lettre (pas LÉZARD pour Z).
+    const e = shuffle([l as Example, ...(l.more ?? [])].filter((x) => x.highlight[0] === 0))[0] ?? l;
     const pool = knownLetters(p);
     const choices = shuffle([l, ...others(pool, l, 2, (x) => x.kind === 'consonant')]).map(letterChoice);
     const pic = h('div', { class: 'card pic-card' }, h('div', { class: 'picture' }, e.emoji));
@@ -490,12 +503,12 @@ export async function runSession(app: App, mode: 'step' | 'boss' = 'step'): Prom
       if (recent.length > 12) recent.shift();
     };
     if (mode === 'step') {
-      // 1. Le chaudron : une nouvelle consonne (ou un son complexe) en syllabes à chaque partie.
+      // 1. La lettre du jour : 6 cartes images, puis le chaudron des syllabes (consonnes et sons complexes).
       const nf = nextFusion(p);
       p.sinceFusion = (p.sinceFusion ?? 0) + 1;
       if (nf) {
         p.sinceFusion = 0;
-        if (nf.kind === 'vowel') await letterStep(nf, true);
+        await discoveryStep(nf);
         p.fused.push(nf.id);
         stat(p, nf.id).introduced = true;
         app.save();

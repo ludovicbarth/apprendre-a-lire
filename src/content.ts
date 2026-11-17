@@ -17,61 +17,75 @@ export interface Letter extends Example {
   id: string;
   letter: string; // ce qui est affiché
   kind: 'vowel' | 'consonant';
-  say: string; // voyelles : le son ; consonnes : non utilisé seul
+  say: string; // le son de la lettre pour la synthèse vocale (approché pour les consonnes : « meu »)
   more?: Example[]; // autres mots d'exemple
 }
 
-const ex = (word: string, wordSay: string, emoji: string, letter: string): Example => {
-  const i = word.indexOf(letter);
-  return { word, wordSay, emoji, highlight: [i, i + letter.length] };
+/**
+ * Un mot d'exemple. La lettre étudiée est entre parenthèses : 'CH(A)T' met en couleur le A.
+ */
+const ex = ([spec, wordSay, emoji]: [string, string, string]): Example => {
+  const i = spec.indexOf('(');
+  const j = spec.indexOf(')');
+  const word = spec.replace(/[()]/g, '');
+  return { word, wordSay, emoji, highlight: [i, j - 1] };
 };
 
-const vowel = (id: string, letter: string, say: string, e: Example): Letter => ({ id, letter, kind: 'vowel', say, ...e });
-const cons = (id: string, letter: string, e: Example, ...more: Example[]): Letter => ({
-  id,
-  letter,
-  kind: 'consonant',
-  say: '',
-  ...e,
-  more,
-});
+type Ex = [string, string, string];
 
-/** Toutes les lettres, dans l'ordre de la méthode syllabique. */
+const vowel = (id: string, letter: string, say: string, examples: Ex[]): Letter => {
+  const [first, ...more] = examples.map(ex);
+  return { id, letter, kind: 'vowel', say, ...first, more };
+};
+
+/**
+ * Consonne. `say` approche le son de la consonne seule (« meu » pour M, comme on le dit souvent en
+ * classe), la synthèse vocale ne sachant pas prononcer « mmm ».
+ */
+const cons = (id: string, letter: string, say: string, examples: Ex[]): Letter => {
+  const [first, ...more] = examples.map(ex);
+  return { id, letter, kind: 'consonant', say, ...first, more };
+};
+
+/** Toutes les lettres, dans l'ordre de la méthode syllabique, avec 6 mots illustrés chacune. */
 export const LETTERS: Letter[] = [
-  vowel('a', 'A', 'a', ex('ANANAS', 'ananas', '🍍', 'A')),
-  vowel('i', 'I', 'i', ex('ÎLE', 'île', '🏝️', 'Î')),
-  vowel('o', 'O', 'oh', ex('ORANGE', 'orange', '🍊', 'O')),
-  vowel('u', 'U', 'u', ex('LUNE', 'lune', '🌙', 'U')),
-  vowel('e_acute', 'É', 'é', ex('ÉTOILE', 'étoile', '⭐', 'É')),
-  vowel('e', 'E', 'euh', ex('CHEVAL', 'cheval', '🐴', 'E')),
-  cons('l', 'L', ex('LION', 'lion', '🦁', 'L'), ex('LAPIN', 'lapin', '🐰', 'L')),
-  cons('m', 'M', ex('MAISON', 'maison', '🏠', 'M'), ex('MOTO', 'moto', '🏍️', 'M')),
-  cons('r', 'R', ex('ROBOT', 'robot', '🤖', 'R'), ex('RENARD', 'renard', '🦊', 'R')),
-  cons('s', 'S', ex('SERPENT', 'serpent', '🐍', 'S'), ex('SOLEIL', 'soleil', '☀️', 'S')),
-  cons('f', 'F', ex('FLEUR', 'fleur', '🌸', 'F'), ex('FRAISE', 'fraise', '🍓', 'F')),
-  cons('v', 'V', ex('VACHE', 'vache', '🐄', 'V'), ex('VÉLO', 'vélo', '🚲', 'V')),
-  cons('n', 'N', ex('NUAGE', 'nuage', '☁️', 'N'), ex('NEZ', 'nez', '👃', 'N')),
-  vowel('ou', 'OU', 'ou', ex('LOUP', 'loup', '🐺', 'OU')),
-  cons('ch', 'CH', ex('CHAT', 'chat', '🐱', 'CH'), ex('CHIEN', 'chien', '🐶', 'CH')),
-  cons('j', 'J', ex('JUS', 'jus', '🧃', 'J'), ex('JAMBE', 'jambe', '🦵', 'J')),
-  cons('p', 'P', ex('POMME', 'pomme', '🍎', 'P'), ex('PAPILLON', 'papillon', '🦋', 'P')),
-  cons('t', 'T', ex('TORTUE', 'tortue', '🐢', 'T'), ex('TOMATE', 'tomate', '🍅', 'T')),
-  vowel('on', 'ON', 'on', ex('MOUTON', 'mouton', '🐑', 'ON')),
-  cons('d', 'D', ex('DAUPHIN', 'dauphin', '🐬', 'D'), ex('DINOSAURE', 'dinosaure', '🦕', 'D')),
-  cons('b', 'B', ex('BALLON', 'ballon', '🎈', 'B'), ex('BANANE', 'banane', '🍌', 'B')),
-  vowel('an', 'AN', 'an', ex('MAMAN', 'maman', '👩', 'AN')),
-  cons('c', 'C', ex('CAROTTE', 'carotte', '🥕', 'C'), ex('CANARD', 'canard', '🦆', 'C')),
-  cons('g', 'G', ex('GÂTEAU', 'gâteau', '🎂', 'G'), ex('GORILLE', 'gorille', '🦍', 'G')),
-  vowel('oi', 'OI', 'oua', ex('ROI', 'roi', '👑', 'OI')),
-  cons('z', 'Z', ex('ZÈBRE', 'zèbre', '🦓', 'Z'), ex('ZÉRO', 'zéro', '0️⃣', 'Z')),
-  vowel('in', 'IN', 'in', ex('LAPIN', 'lapin', '🐰', 'IN')),
+  vowel('a', 'A', 'a', [['(A)NANAS', 'ananas', '🍍'], ['(A)BEILLE', 'abeille', '🐝'], ['(A)VION', 'avion', '✈️'], ['(A)RBRE', 'arbre', '🌳'], ['CH(A)T', 'chat', '🐱'], ['V(A)CHE', 'vache', '🐄']]),
+  vowel('i', 'I', 'i', [['L(I)T', 'lit', '🛏️'], ['R(I)Z', 'riz', '🍚'], ['K(I)WI', 'kiwi', '🥝'], ['G(I)RAFE', 'girafe', '🦒'], ['P(I)ZZA', 'pizza', '🍕'], ['SOUR(I)S', 'souris', '🐭']]),
+  vowel('o', 'O', 'oh', [['(O)RANGE', 'orange', '🍊'], ['M(O)TO', 'moto', '🏍️'], ['R(O)BOT', 'robot', '🤖'], ['P(O)MME', 'pomme', '🍎'], ['T(O)MATE', 'tomate', '🍅'], ['(O)LIVE', 'olive', '🫒']]),
+  vowel('u', 'U', 'u', [['L(U)NE', 'lune', '🌙'], ['J(U)S', 'jus', '🧃'], ['B(U)S', 'bus', '🚌'], ['T(U)LIPE', 'tulipe', '🌷'], ['L(U)NETTES', 'lunettes', '👓'], ['TORT(U)E', 'tortue', '🐢']]),
+  vowel('e_acute', 'É', 'é', [['(É)TOILE', 'étoile', '⭐'], ['B(É)BÉ', 'bébé', '👶'], ['V(É)LO', 'vélo', '🚲'], ['CAF(É)', 'café', '☕'], ['FUS(É)E', 'fusée', '🚀'], ['(É)LÉPHANT', 'éléphant', '🐘']]),
+  vowel('e', 'E', 'euh', [['CH(E)VAL', 'cheval', '🐴'], ['CH(E)MISE', 'chemise', '👔'], ['R(E)NARD', 'renard', '🦊'], ['F(E)NÊTRE', 'fenêtre', '🪟'], ['M(E)LON', 'melon', '🍈'], ['C(E)RISE', 'cerise', '🍒']]),
+  cons('l', 'L', 'le', [['(L)ION', 'lion', '🦁'], ['(L)APIN', 'lapin', '🐰'], ['(L)UNE', 'lune', '🌙'], ['(L)IT', 'lit', '🛏️'], ['(L)IVRE', 'livre', '📖'], ['(L)OUP', 'loup', '🐺']]),
+  cons('m', 'M', 'me', [['(M)AISON', 'maison', '🏠'], ['(M)OTO', 'moto', '🏍️'], ['(M)OUTON', 'mouton', '🐑'], ['(M)AMAN', 'maman', '👩'], ['(M)ELON', 'melon', '🍈'], ['(M)OUCHE', 'mouche', '🪰']]),
+  cons('r', 'R', 'reu', [['(R)OBOT', 'robot', '🤖'], ['(R)ENARD', 'renard', '🦊'], ['(R)OI', 'roi', '👑'], ['(R)OSE', 'rose', '🌹'], ['(R)IZ', 'riz', '🍚'], ['(R)ADIO', 'radio', '📻']]),
+  cons('s', 'S', 'se', [['(S)ERPENT', 'serpent', '🐍'], ['(S)OLEIL', 'soleil', '☀️'], ['(S)APIN', 'sapin', '🌲'], ['(S)OURIS', 'souris', '🐭'], ['(S)ALADE', 'salade', '🥗'], ['(S)AC', 'sac', '👜']]),
+  cons('f', 'F', 'feu', [['(F)LEUR', 'fleur', '🌸'], ['(F)RAISE', 'fraise', '🍓'], ['(F)USÉE', 'fusée', '🚀'], ['(F)EU', 'feu', '🔥'], ['(F)OURMI', 'fourmi', '🐜'], ['(F)ROMAGE', 'fromage', '🧀']]),
+  cons('v', 'V', 'veu', [['(V)ACHE', 'vache', '🐄'], ['(V)ÉLO', 'vélo', '🚲'], ['(V)OITURE', 'voiture', '🚗'], ['(V)OLCAN', 'volcan', '🌋'], ['(V)ALISE', 'valise', '🧳'], ['(V)IOLON', 'violon', '🎻']]),
+  cons('n', 'N', 'ne', [['(N)UAGE', 'nuage', '☁️'], ['(N)EZ', 'nez', '👃'], ['(N)ID', 'nid', '🪺'], ['(N)EIGE', 'neige', '❄️'], ['(N)AVIRE', 'navire', '⛵'], ['(N)OUILLES', 'nouilles', '🍜']]),
+  vowel('ou', 'OU', 'ou', [['L(OU)P', 'loup', '🐺'], ['M(OU)TON', 'mouton', '🐑'], ['P(OU)LE', 'poule', '🐔'], ['S(OU)RIS', 'souris', '🐭'], ['R(OU)E', 'roue', '🛞'], ['M(OU)CHE', 'mouche', '🪰']]),
+  cons('ch', 'CH', 'cheu', [['(CH)AT', 'chat', '🐱'], ['(CH)IEN', 'chien', '🐶'], ['(CH)APEAU', 'chapeau', '🎩'], ['(CH)OCOLAT', 'chocolat', '🍫'], ['(CH)AMPIGNON', 'champignon', '🍄'], ['(CH)AUSSURE', 'chaussure', '👟']]),
+  cons('j', 'J', 'je', [['(J)US', 'jus', '🧃'], ['(J)AMBE', 'jambe', '🦵'], ['(J)EAN', 'jean', '👖'], ['(J)UPE', 'jupe', '👗'], ['(J)AGUAR', 'jaguar', '🐆'], ['(J)ONGLEUR', 'jongleur', '🤹']]),
+  cons('p', 'P', 'peu', [['(P)OMME', 'pomme', '🍎'], ['(P)APILLON', 'papillon', '🦋'], ['(P)OULE', 'poule', '🐔'], ['(P)IZZA', 'pizza', '🍕'], ['(P)INGOUIN', 'pingouin', '🐧'], ['(P)OIRE', 'poire', '🍐']]),
+  cons('t', 'T', 'te', [['(T)ORTUE', 'tortue', '🐢'], ['(T)OMATE', 'tomate', '🍅'], ['(T)IGRE', 'tigre', '🐯'], ['(T)ÉLÉPHONE', 'téléphone', '📞'], ['(T)RAIN', 'train', '🚂'], ['(T)ENTE', 'tente', '⛺']]),
+  vowel('on', 'ON', 'on', [['MOUT(ON)', 'mouton', '🐑'], ['B(ON)BON', 'bonbon', '🍬'], ['CAMI(ON)', 'camion', '🚚'], ['AVI(ON)', 'avion', '✈️'], ['LI(ON)', 'lion', '🦁'], ['POISS(ON)', 'poisson', '🐟']]),
+  cons('d', 'D', 'de', [['(D)AUPHIN', 'dauphin', '🐬'], ['(D)INOSAURE', 'dinosaure', '🦕'], ['(D)É', 'dé', '🎲'], ['(D)ENT', 'dent', '🦷'], ['(D)RAGON', 'dragon', '🐉'], ['(D)OUCHE', 'douche', '🚿']]),
+  cons('b', 'B', 'beu', [['(B)ALLON', 'ballon', '🎈'], ['(B)ANANE', 'banane', '🍌'], ['(B)ÉBÉ', 'bébé', '👶'], ['(B)ATEAU', 'bateau', '⛵'], ['(B)OUGIE', 'bougie', '🕯️'], ['(B)ALEINE', 'baleine', '🐋']]),
+  vowel('an', 'AN', 'an', [['MAM(AN)', 'maman', '👩'], ['P(AN)DA', 'panda', '🐼'], ['OR(AN)GE', 'orange', '🍊'], ['(AN)GE', 'ange', '👼'], ['ÉLÉPH(AN)T', 'éléphant', '🐘'], ['ENF(AN)T', 'enfant', '🧒']]),
+  cons('c', 'C', 'queue', [['(C)AROTTE', 'carotte', '🥕'], ['(C)ANARD', 'canard', '🦆'], ['(C)AMION', 'camion', '🚚'], ['(C)OCHON', 'cochon', '🐷'], ['(C)AFÉ', 'café', '☕'], ['(C)ROCODILE', 'crocodile', '🐊']]),
+  cons('g', 'G', 'gueu', [['(G)ÂTEAU', 'gâteau', '🎂'], ['(G)ORILLE', 'gorille', '🦍'], ['(G)UITARE', 'guitare', '🎸'], ['(G)LACE', 'glace', '🍦'], ['(G)RENOUILLE', 'grenouille', '🐸'], ['(G)ANT', 'gant', '🧤']]),
+  vowel('oi', 'OI', 'oua', [['R(OI)', 'roi', '👑'], ['(OI)SEAU', 'oiseau', '🐦'], ['P(OI)RE', 'poire', '🍐'], ['ÉT(OI)LE', 'étoile', '⭐'], ['P(OI)SSON', 'poisson', '🐟'], ['V(OI)TURE', 'voiture', '🚗']]),
+  cons('z', 'Z', 'zeu', [['(Z)ÈBRE', 'zèbre', '🦓'], ['(Z)ÉRO', 'zéro', '0️⃣'], ['LÉ(Z)ARD', 'lézard', '🦎'], ['BRON(Z)E', 'bronze', '🥉'], ['GA(Z)ELLE', 'gazelle', '🦌'], ['GA(Z)', 'gaz', '⛽']]),
+  vowel('in', 'IN', 'in', [['LAP(IN)', 'lapin', '🐰'], ['SAP(IN)', 'sapin', '🌲'], ['PINGOU(IN)', 'pingouin', '🐧'], ['DAUPH(IN)', 'dauphin', '🐬'], ['RAIS(IN)', 'raisin', '🍇'], ['JARD(IN)', 'jardin', '🪴']]),
 ];
 
 /** Son complexe écrit avec deux lettres (OU, ON, AN, OI, IN). */
 export const isComplex = (l: Letter) => l.kind === 'vowel' && l.letter.length > 1;
 
-/** Ordre du chaudron : chaque partie fait découvrir une nouvelle consonne (ou un son complexe) en syllabes. */
-export const FUSION_ORDER: Letter[] = LETTERS.filter((l) => l.kind === 'consonant' || isComplex(l));
+/**
+ * Ordre de découverte : chaque partie commence par une lettre (6 cartes images), puis, pour une
+ * consonne ou un son complexe, le chaudron des syllabes.
+ */
+export const FUSION_ORDER: Letter[] = LETTERS;
 
 const byLetter = new Map(LETTERS.map((l) => [l.letter, l]));
 

@@ -10,7 +10,12 @@ en MAJUSCULE, et l'enfant apprend son **son** (et non son nom) en écoutant et e
 - **Tout l'alphabet dès le départ** (l'enfant connaît ses lettres) : voyelles A, I, O, U, É, E
   par leur son, consonnes par le début des mots (la synthèse vocale ne sait pas prononcer
   une consonne seule).
-- **Le chaudron magique** : à chaque partie, une nouvelle consonne (L, M, R, S, F, V, N, CH, J,
+- **La lettre du jour** : chaque partie commence par une lettre présentée avec **6 cartes images**
+  (A : ananas, abeille, avion, arbre, chat, vache…). Pour chaque carte, la sorcière dit le son de
+  la lettre puis le mot entier, et l'enfant peut répéter au micro. Ordre : les voyelles, puis les
+  consonnes et les sons complexes. Le son d'une consonne seule est approché (« meu » pour M),
+  la synthèse vocale ne sachant pas dire « mmm ».
+- **Le chaudron magique** : après la lettre du jour, une nouvelle consonne (L, M, R, S, F, V, N, CH, J,
   P, T, D, B, C, G, Z) ou un son complexe (OU, ON, AN, OI, IN, avec sa carte de découverte et
   **🎤 À toi !**) fusionne avec les voyelles : M + A = MA… Cela ouvre ses syllabes et les mots
   qui l'utilisent. La suivante attend que deux syllabes de la précédente soient réussies.
