@@ -4,7 +4,7 @@ import { icon } from '../icons';
 import { parentMenu } from '../parent';
 import { speak, speechAvailable } from '../speech';
 import { h } from '../ui';
-import { SOUNDS } from '../content';
+import { LETTERS } from '../content';
 import { WORLDS } from '../worlds';
 
 export function showHome(app: App): void {
@@ -13,7 +13,7 @@ export function showHome(app: App): void {
   const world = WORLDS[Math.min(p.world, WORLDS.length - 1)];
 
   const letters = h('div', { class: 'letter-strip' });
-  SOUNDS.forEach((s, i) => {
+  LETTERS.forEach((s, i) => {
     const unlocked = i < p.unlocked && p.sounds[s.id].introduced;
     letters.append(h('div', { class: `mini-letter ${unlocked ? '' : 'locked'}` }, unlocked ? s.letter : '?'));
   });

@@ -12,8 +12,19 @@ en MAJUSCULE, et l'enfant apprend son **son** (et non son nom) en écoutant et e
   se réécoute et compare avec la sorcière (rien n'est conservé ni envoyé).
 - **L'écho magique** : la sorcière dit un son, l'enfant touche la bonne lettre parmi 3.
   8 tours par partie, sans chrono ni pénalité ; une erreur fait réentendre la différence.
-- Révision espacée : les sons fragiles reviennent plus souvent. On commence avec A, I, O ;
-  U, É et E se débloquent quand les sons précédents sont acquis.
+- **Programme complet** (`src/content.ts`), une lettre débloquée à la fois quand les précédentes sont acquises :
+  1. voyelles A, I, O, U, É, E — par leur son ;
+  2. consonnes L, M, R, S, F, V, N, CH, J, P, T, D, B, C, G, Z — par le début des mots
+     (la synthèse vocale ne sait pas prononcer une consonne seule) ;
+  3. sons complexes OU, ON, AN, OI, IN, intercalés au fil des consonnes.
+- **Le chaudron magique** : à chaque nouvelle consonne, la sorcière montre la fusion avec les
+  voyelles connues (M + A = MA, M + I = MI…).
+- **Exercices mélangés** à chaque partie, selon ce que l'enfant connaît :
+  son d'une voyelle → trouver la lettre ; image → trouver la première lettre du mot ;
+  syllabe entendue → la retrouver parmi 3 ; **mot écrit → toucher la bonne image** (vraie lecture).
+  Les mots sont découpés en syllabes de couleurs alternées, les lettres muettes en gris ;
+  un bouton d'aide lit le mot si besoin. Environ 200 syllabes et 45 mots.
+- Révision espacée : les éléments fragiles reviennent plus souvent.
 - Progression et étoiles sauvegardées sur la tablette. Fonctionne hors ligne après la première ouverture.
 - **L'aventure** : 6 mondes avec chacun leur décor (prairie enchantée, chemin de campagne,
   forêt maléfique, bord de mer, château en ruine, donjon). Chaque partie fait avancer la sorcière
@@ -24,7 +35,7 @@ en MAJUSCULE, et l'enfant apprend son **son** (et non son nom) en écoutant et e
   une partie de jeu 20 ★, un McDo 60 ★, un tour au petit magasin 100 ★). Un achat donne un
   **bon cadeau** à montrer aux parents, qui le marquent « donné » (protégé par une multiplication).
 - Espace parent (⚙, protégé par une multiplication) : changer le nom, effacer la progression,
-  tester la voix, modifier les prix, ajouter ou retirer des cadeaux, donner ou retirer des étoiles.
+  tester la voix, débloquer la lettre suivante, modifier les prix, ajouter ou retirer des cadeaux, donner ou retirer des étoiles.
 
 La sorcière et le décor sont des illustrations vectorielles (`src/art.ts`). Les images des mots sont
 provisoires (émojis) et seront remplacées par de vraies illustrations.

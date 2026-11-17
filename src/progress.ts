@@ -1,6 +1,6 @@
 // Progression sauvegardée sur la tablette (localStorage), avec une révision espacée simple :
 // chaque son a un niveau de 0 à 5 (boîtes de Leitner). Les sons de faible niveau reviennent plus souvent.
-import { SOUNDS, INITIAL_UNLOCKED } from './content';
+import { LETTERS, SYLLABLES, WORDS, INITIAL_UNLOCKED, type Letter } from './content';
 import { DEFAULT_GIFTS, type Gift } from './gifts';
 
 export const MAX_LEVEL = 5;
@@ -31,13 +31,13 @@ export interface Progress {
   adventureDone: boolean;
   gifts: Gift[];
   coupons: Coupon[];
-  unlocked: number; // nombre de sons débloqués, dans l'ordre de SOUNDS
-  sounds: Record<string, SoundProgress>;
+  unlocked: number; // nombre de lettres débloquées, dans l'ordre de LETTERS
+  sounds: Record<string, SoundProgress>; // statistiques par lettre, syllabe (« syl:ma ») et mot (« mot:moto »)
 }
 
 function fresh(): Progress {
   const sounds: Record<string, SoundProgress> = {};
-  for (const s of SOUNDS) sounds[s.id] = { level: 0, introduced: false, correct: 0, wrong: 0 };
+  for (const s of LETTERS) sounds[s.id] = { level: 0, introduced: false, correct: 0, wrong: 0 };
   return {
     witchName: null,
     stars: 0,
@@ -78,22 +78,48 @@ export function reset(): Progress {
   return p;
 }
 
-export function unlockedSounds(p: Progress) {
-  return SOUNDS.slice(0, p.unlocked);
+/** Statistiques d'un élément (lettre, syllabe ou mot), créées à la demande. */
+export function stat(p: Progress, id: string): SoundProgress {
+  return (p.sounds[id] ??= { level: 0, introduced: false, correct: 0, wrong: 0 });
 }
 
-/** Débloque le son suivant quand tous les sons débloqués ont atteint le niveau 2. */
+export function unlockedLetters(p: Progress): Letter[] {
+  return LETTERS.slice(0, p.unlocked);
+}
+
+/** Lettres déjà présentées à l'enfant. */
+export function knownLetters(p: Progress): Letter[] {
+  return unlockedLetters(p).filter((l) => stat(p, l.id).introduced);
+}
+
+export function availableSyllables(p: Progress) {
+  const known = new Set(knownLetters(p).map((l) => l.id));
+  return SYLLABLES.filter((s) => known.has(s.consonant) && known.has(s.vowel));
+}
+
+export function availableWords(p: Progress) {
+  const known = new Set(knownLetters(p).map((l) => l.id));
+  return WORDS.filter((w) => w.letters.every((id) => known.has(id)));
+}
+
+/**
+ * Débloque la lettre suivante quand la dernière découverte est acquise (niveau 2)
+ * et que la plupart des lettres connues le sont aussi.
+ */
 export function maybeUnlock(p: Progress): boolean {
-  if (p.unlocked >= SOUNDS.length) return false;
-  const ok = unlockedSounds(p).every((s) => p.sounds[s.id].level >= 2);
+  if (p.unlocked >= LETTERS.length) return false;
+  const letters = unlockedLetters(p);
+  const newest = letters[letters.length - 1];
+  const solid = letters.filter((l) => stat(p, l.id).level >= 2).length;
+  const ok = stat(p, newest.id).level >= 2 && solid >= Math.ceil(letters.length * 0.7);
   if (ok) p.unlocked++;
   return ok;
 }
 
-/** Tirage pondéré : plus un son est fragile, plus il a de chances d'être choisi. */
+/** Tirage pondéré : plus un élément est fragile, plus il a de chances d'être choisi. */
 export function pickWeighted<T extends { id: string }>(items: T[], p: Progress, avoidId?: string): T {
   const pool = items.length > 1 && avoidId ? items.filter((i) => i.id !== avoidId) : items;
-  const weights = pool.map((i) => MAX_LEVEL + 1 - p.sounds[i.id].level);
+  const weights = pool.map((i) => MAX_LEVEL + 1 - (p.sounds[i.id]?.level ?? 0));
   let r = Math.random() * weights.reduce((a, b) => a + b, 0);
   for (let k = 0; k < pool.length; k++) {
     r -= weights[k];
