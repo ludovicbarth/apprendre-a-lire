@@ -9,7 +9,7 @@ export interface Sound {
   word: string;
   wordSay: string;
   highlight: [number, number]; // [début, fin) dans `word`
-  emoji: string; // image provisoire, pixelisée à l'affichage
+  emoji: string; // image provisoire
 }
 
 export const SOUNDS: Sound[] = [

@@ -1,5 +1,5 @@
 // Mise en cache simple pour jouer hors ligne une fois l'application ouverte une première fois.
-const CACHE = 'runes-v1';
+const CACHE = 'lettres-v2';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {
   e.waitUntil(
