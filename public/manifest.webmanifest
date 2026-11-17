@@ -1,11 +1,11 @@
 {
-  "name": "La Sorcière des Runes",
-  "short_name": "Runes",
+  "name": "Lettres Magiques",
+  "short_name": "Lettres",
   "lang": "fr",
   "start_url": "./",
   "display": "fullscreen",
   "orientation": "any",
-  "background_color": "#2b1d3d",
-  "theme_color": "#2b1d3d",
+  "background_color": "#7b3fc4",
+  "theme_color": "#7b3fc4",
   "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
 }

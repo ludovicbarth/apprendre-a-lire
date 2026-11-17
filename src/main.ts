@@ -1,8 +1,9 @@
 import '@fontsource/andika/700.css';
-import '@fontsource/press-start-2p/400.css';
+import '@fontsource/fredoka/500.css';
+import '@fontsource/fredoka/700.css';
 import './style.css';
 import { load, save, reset, type Progress } from './progress';
-import { forestCanvas } from './pixel';
+import { forestEl } from './art';
 import { showNameScreen } from './screens/name';
 import { showHome } from './screens/home';
 
@@ -14,9 +15,7 @@ export interface App {
   go(screen: 'name' | 'home'): void;
 }
 
-const bg = forestCanvas(192, 108);
-bg.id = 'bg';
-document.body.prepend(bg);
+document.body.prepend(forestEl());
 
 const app: App = {
   progress: load(),

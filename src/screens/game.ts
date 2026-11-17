@@ -1,7 +1,8 @@
 import type { App } from '../main';
 import { PRAISE, SOUNDS, type Sound } from '../content';
 import { maybeUnlock, MAX_LEVEL, pickWeighted, unlockedSounds } from '../progress';
-import { pixelEmoji, witchCanvas } from '../pixel';
+import { witchEl } from '../art';
+import { icon } from '../icons';
 import { recordFor, playBlob, recorderAvailable } from '../recorder';
 import { speak, speakSound, stopSpeaking } from '../speech';
 import { animate, h, shuffle, sparkle, wait } from '../ui';
@@ -11,7 +12,7 @@ const ROUNDS = 8;
 class Quit extends Error {}
 
 /**
- * « L'écho magique » : la sorcière prononce un son, l'enfant touche la rune correspondante.
+ * « L'écho magique » : la sorcière prononce un son, l'enfant touche la lettre magique correspondante.
  * Les nouveaux sons sont d'abord présentés (image + mot + répétition au micro).
  */
 export async function runSession(app: App): Promise<void> {
@@ -23,7 +24,8 @@ export async function runSession(app: App): Promise<void> {
   app.root.replaceChildren();
 
   // --- Mise en page commune ---
-  const starsEl = h('div', { class: 'stars' }, `★ ${p.stars}`);
+  const starCount = h('span', {}, String(p.stars));
+  const starsEl = h('div', { class: 'stars' }, h('span', { class: 'star-ico' }, '★'), starCount);
   const dots = h('div', { class: 'dots' });
   for (let i = 0; i < ROUNDS; i++) dots.append(h('span', { class: 'dot' }));
   const home = h('button', {
@@ -33,8 +35,8 @@ export async function runSession(app: App): Promise<void> {
       stopSpeaking();
       app.go('home');
     },
-  }, '⌂');
-  const witch = h('div', { class: 'witch bob' }, witchCanvas());
+  }, icon('home'));
+  const witch = witchEl('bob');
   const bubble = h('div', { class: 'bubble' });
   const stage = h('div', { class: 'stage' });
 
@@ -53,17 +55,21 @@ export async function runSession(app: App): Promise<void> {
   const say = async (text: string, bubbleText = text) => {
     check();
     bubble.textContent = bubbleText;
+    witch.classList.add('talking');
     await speak(text);
+    witch.classList.remove('talking');
     check();
   };
   const sound = async (s: Sound) => {
     check();
+    witch.classList.add('talking');
     await speakSound(s.say);
+    witch.classList.remove('talking');
     check();
   };
   const addStar = () => {
     p.stars++;
-    starsEl.textContent = `★ ${p.stars}`;
+    starCount.textContent = String(p.stars);
     animate(starsEl, 'pop', 400);
   };
   const cast = () => {
@@ -71,19 +77,19 @@ export async function runSession(app: App): Promise<void> {
     sparkle(witch);
   };
 
-  // --- Carte « rune » : grande lettre, image pixel, mot avec le son en couleur ---
-  function runeCard(s: Sound): HTMLElement {
+  // --- Carte « lettre magique » : grande lettre, image, mot avec le son en couleur ---
+  function letterCard(s: Sound): HTMLElement {
     const [a, b] = s.highlight;
     return h(
       'div',
       { class: 'card' },
-      h('div', { class: 'rune-big' }, s.letter),
-      h('div', { class: 'picture' }, pixelEmoji(s.emoji)),
+      h('div', { class: 'letter-big' }, s.letter),
+      h('div', { class: 'picture' }, s.emoji),
       h('div', { class: 'word' }, s.word.slice(0, a), h('span', { class: 'hl' }, s.word.slice(a, b)), s.word.slice(b)),
     );
   }
 
-  async function sayRune(s: Sound) {
+  async function sayLetter(s: Sound) {
     await sound(s);
     await wait(250);
     await say(`${s.say}, comme ${s.wordSay}`, `${s.letter} … comme ${s.word}`);
@@ -92,18 +98,18 @@ export async function runSession(app: App): Promise<void> {
   /** Présentation d'un son puis « À toi ! » : l'enfant répète au micro et s'écoute. */
   async function repeatStep(s: Sound, intro: boolean) {
     check();
-    const listen = h('button', { class: 'btn btn-round', title: 'Écouter' }, '🔊');
-    const mic = h('button', { class: 'btn btn-round mic', title: 'À toi !' }, '🎤');
-    const next = h('button', { class: 'btn btn-go', title: 'Continuer' }, '➜');
+    const listen = h('button', { class: 'btn btn-round', 'aria-label': 'Écouter' }, icon('listen'));
+    const mic = h('button', { class: 'btn btn-round mic', 'aria-label': 'À toi !' }, icon('mic'));
+    const next = h('button', { class: 'btn btn-round btn-go', 'aria-label': 'Continuer' }, icon('next'));
     const actions = h('div', { class: 'actions' }, listen, recorderAvailable() && mic, next);
-    stage.replaceChildren(runeCard(s), actions);
+    stage.replaceChildren(letterCard(s), actions);
 
-    if (intro) await say('Voici une nouvelle rune magique !');
-    await sayRune(s);
+    if (intro) await say('Voici une nouvelle lettre magique !');
+    await sayLetter(s);
     await say(`À toi ! Répète : ${s.say}`, `À toi ! Répète : ${s.letter}`);
 
     await new Promise<void>((resolve) => {
-      listen.onclick = () => sayRune(s).catch(() => {});
+      listen.onclick = () => sayLetter(s).catch(() => {});
       mic.onclick = async () => {
         if (mic.classList.contains('rec')) return;
         try {
@@ -129,17 +135,19 @@ export async function runSession(app: App): Promise<void> {
     check();
   }
 
-  /** Un tour de quiz. Renvoie vrai si la bonne rune a été trouvée du premier coup. */
+  /** Un tour de quiz. Renvoie vrai si la bonne lettre a été trouvée du premier coup. */
   async function quizRound(target: Sound, pool: Sound[]): Promise<boolean> {
     const others = shuffle(pool.filter((s) => s.id !== target.id)).slice(0, 2);
     const choices = shuffle([target, ...others]);
-    const listen = h('button', { class: 'btn btn-round', title: 'Réécouter' }, '🔊');
-    const runes = choices.map((s) => h('button', { class: 'rune', 'data-id': s.id }, s.letter));
-    stage.replaceChildren(h('div', { class: 'runes' }, ...runes), h('div', { class: 'actions' }, listen));
+    const listen = h('button', { class: 'btn btn-round', 'aria-label': 'Réécouter' }, icon('listen'));
+    const tiles = choices.map((s) => h('button', { class: 'tile', 'data-id': s.id }, s.letter));
+    stage.replaceChildren(h('div', { class: 'tiles' }, ...tiles), h('div', { class: 'actions' }, listen));
 
     const ask = async () => {
-      bubble.textContent = 'Trouve la rune…';
-      await speak('Trouve la rune');
+      bubble.textContent = 'Quelle lettre fait ce son ?';
+      witch.classList.add('talking');
+      await speak('Quelle lettre fait le son');
+      witch.classList.remove('talking');
       await wait(150);
       await sound(target);
     };
@@ -150,11 +158,11 @@ export async function runSession(app: App): Promise<void> {
     const sp = p.sounds[target.id];
     while (true) {
       const picked = await new Promise<Sound>((resolve) => {
-        runes.forEach((r, i) => (r.onclick = () => resolve(choices[i])));
+        tiles.forEach((r, i) => (r.onclick = () => resolve(choices[i])));
         home.addEventListener('click', () => resolve(target));
       });
       check();
-      const btn = runes[choices.indexOf(picked)];
+      const btn = tiles[choices.indexOf(picked)];
       if (picked.id === target.id) {
         btn.classList.add('good');
         cast();
@@ -195,7 +203,7 @@ export async function runSession(app: App): Promise<void> {
     }
 
     // 2. Quiz avec révision espacée.
-    await say(`On joue à l'écho magique ! Je dis un son, tu touches la bonne rune.`, 'L’écho magique !');
+    await say(`On joue à l'écho magique ! Je dis un son, et tu touches la bonne lettre.`, 'L’écho magique !');
     const pool = unlockedSounds(p).filter((s) => p.sounds[s.id].introduced);
     let last: string | undefined;
     for (let r = 0; r < ROUNDS; r++) {
@@ -211,37 +219,38 @@ export async function runSession(app: App): Promise<void> {
     const before = p.unlocked;
     maybeUnlock(p);
     app.save();
-    const newRune = p.unlocked > before ? SOUNDS[p.unlocked - 1] : null;
-    await endScreen(newRune);
+    const newLetter = p.unlocked > before ? SOUNDS[p.unlocked - 1] : null;
+    await endScreen(newLetter);
   } catch (e) {
     if (!(e instanceof Quit)) throw e;
   }
 
-  async function endScreen(newRune: Sound | null) {
+  async function endScreen(newLetter: Sound | null) {
     check();
     stage.replaceChildren(
       h(
         'div',
         { class: 'card end' },
-        h('div', { class: 'end-title' }, 'BRAVO !'),
-        h('div', { class: 'end-stars' }, `★ ${p.stars}`),
-        newRune && h('div', { class: 'end-new' }, 'Nouvelle rune : ', h('span', { class: 'rune small' }, '?')),
+        h('div', { class: 'end-title' }, 'Bravo !'),
+        h('div', { class: 'end-stars' }, '★ ', String(p.stars)),
+        newLetter && h('div', { class: 'end-new' }, 'Une nouvelle lettre magique t’attend !'),
       ),
       h(
         'div',
         { class: 'actions' },
-        h('button', { class: 'btn btn-round', onclick: () => app.go('home') }, '⌂'),
+        h('button', { class: 'btn btn-round', 'aria-label': 'Maison', onclick: () => app.go('home') }, icon('home')),
         h('button', {
-          class: 'btn btn-go',
+          class: 'btn btn-round btn-go',
+          'aria-label': 'Rejouer',
           onclick: () => {
             app.root.replaceChildren();
             runSession(app);
           },
-        }, '↻'),
+        }, icon('replay')),
       ),
     );
     cast();
     await say(`Bravo ! Grâce à toi, ${name} a gagné des étoiles magiques !`);
-    if (newRune) await say('Et une nouvelle rune est apparue ! Tu la découvriras à la prochaine partie.');
+    if (newLetter) await say('Et une nouvelle lettre magique est apparue ! Tu la découvriras à la prochaine partie.');
   }
 }

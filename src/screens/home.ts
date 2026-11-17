@@ -1,5 +1,6 @@
 import type { App } from '../main';
-import { witchCanvas } from '../pixel';
+import { witchEl } from '../art';
+import { icon } from '../icons';
 import { speak, speechAvailable } from '../speech';
 import { h } from '../ui';
 import { runSession } from './game';
@@ -9,29 +10,30 @@ export function showHome(app: App): void {
   const p = app.progress;
   const name = p.witchName ?? 'LILA';
 
-  const runes = h('div', { class: 'rune-strip' });
+  const letters = h('div', { class: 'letter-strip' });
   SOUNDS.forEach((s, i) => {
     const unlocked = i < p.unlocked && p.sounds[s.id].introduced;
     const lvl = p.sounds[s.id].level;
-    runes.append(
-      h('div', { class: `mini-rune ${unlocked ? '' : 'locked'}`, title: `niveau ${lvl}` }, unlocked ? s.letter : '?'),
+    letters.append(
+      h('div', { class: `mini-letter ${unlocked ? '' : 'locked'}`, title: `niveau ${lvl}` }, unlocked ? s.letter : '?'),
     );
   });
 
-  const witch = h('div', { class: 'witch big bob' }, witchCanvas());
+  const witch = witchEl('big bob');
   witch.addEventListener('click', () => speak(`Coucou ! C'est moi, ${name.charAt(0) + name.slice(1).toLowerCase()} !`));
 
-  const parent = h('button', { class: 'btn-parent', onclick: () => parentMenu(app) }, '⚙');
+  const parent = h('button', { class: 'btn-parent', 'aria-label': 'Espace parent', onclick: () => parentMenu(app) }, icon('gear'));
 
   app.root.append(
     h(
       'div',
       { class: 'screen home' },
-      h('div', { class: 'topbar' }, h('div', { class: 'stars' }, `★ ${p.stars}`), parent),
+      h('div', { class: 'topbar' }, h('div', { class: 'stars' }, h('span', { class: 'star-ico' }, '★'), String(p.stars)), parent),
       h('h1', { class: 'title' }, name),
       witch,
-      runes,
-      h('button', { class: 'btn btn-play', onclick: () => runSession(app) }, 'JOUER'),
+      h('div', { class: 'strip-label' }, 'Mes lettres magiques'),
+      letters,
+      h('button', { class: 'btn btn-play', onclick: () => runSession(app) }, 'Jouer'),
       !speechAvailable() && h('p', { class: 'warn' }, 'La voix ne fonctionne pas dans ce navigateur. Utilisez Chrome.'),
     ),
   );

@@ -1,14 +1,14 @@
 import type { App } from '../main';
 import { WITCH_NAMES } from '../content';
-import { witchCanvas } from '../pixel';
+import { witchEl } from '../art';
 import { speak } from '../speech';
 import { h, sparkle } from '../ui';
 
 // Premier lancement : l'enfant choisit le nom de sa sorcière.
 export function showNameScreen(app: App): void {
   let chosen: string | null = null;
-  const witch = h('div', { class: 'witch big bob' }, witchCanvas());
-  const ok = h('button', { class: 'btn btn-go', disabled: 'true', onclick: () => confirm() }, '✔');
+  const witch = witchEl('big bob');
+  const ok = h('button', { class: 'btn btn-go', disabled: 'true', onclick: () => confirm() }, 'C’est moi !');
 
   const choose = (name: string, btn: HTMLElement) => {
     chosen = name;
